@@ -19,7 +19,7 @@ export async function generateMetadata({
   const movie = await getMovieBySlug(slug);
   if (!movie || movie.count < MIN_SONGS_FOR_PAGE) return {};
   return {
-    title: `${movie.movie} Telugu Karaoke Tracks (${movie.count} song${movie.count === 1 ? "" : "s"}) | SPKaraoke`,
+    title: `${movie.movie} Telugu Karaoke Tracks (${movie.count} song${movie.count === 1 ? "" : "s"}) | SatyaPylaKaraoke`,
     description: `Karaoke tracks for ${movie.movie} — ${movie.count} Telugu karaoke track${movie.count === 1 ? "" : "s"} from the movie, vocals removed, pitch true to the original, ready to sing.`,
     alternates: { canonical: `/songs/${movie.slug}` },
   };

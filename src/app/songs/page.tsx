@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getAllMoviesWithCounts, MIN_SONGS_FOR_PAGE } from "@/lib/movies";
 
 export const metadata: Metadata = {
-  title: "Telugu Karaoke Tracks by Movie — Full Catalog | SPKaraoke",
+  title: "Telugu Karaoke Tracks by Movie — Full Catalog | SatyaPylaKaraoke",
   description:
     "Browse 5,000+ Telugu karaoke tracks organized by movie. Find karaoke versions of your favorite Telugu film songs, vocals removed, ready to sing.",
   alternates: { canonical: "/songs" },
@@ -76,7 +76,7 @@ export default async function SongsHubPage() {
 
       <p style={{ marginTop: 40 }}>
         <Link href="/" style={{ color: "var(--accent)", fontWeight: 700, textDecoration: "none" }}>
-          ← Back to SPKaraoke home
+          ← Back to SatyaPylaKaraoke home
         </Link>
       </p>
     </div>

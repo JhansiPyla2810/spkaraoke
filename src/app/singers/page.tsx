@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getAllHeroesWithCounts, MIN_SONGS_FOR_PAGE } from "@/lib/heroes";
 
 export const metadata: Metadata = {
-  title: "Telugu Karaoke Tracks by Singer & Hero — Full Catalog | SPKaraoke",
+  title: "Telugu Karaoke Tracks by Singer & Hero — Full Catalog | SatyaPylaKaraoke",
   description:
     "Browse Telugu karaoke tracks by original hero and singer — NTR, Chiranjeevi, ANR, Nagarjuna and more, vocals removed, ready to sing.",
   alternates: { canonical: "/singers" },
@@ -71,7 +71,7 @@ export default async function SingersHubPage() {
 
       <p style={{ marginTop: 40 }}>
         <Link href="/" style={{ color: "var(--accent)", fontWeight: 700, textDecoration: "none" }}>
-          ← Back to SPKaraoke home
+          ← Back to SatyaPylaKaraoke home
         </Link>
       </p>
     </div>
