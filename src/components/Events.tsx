@@ -1,13 +1,14 @@
 "use client";
 
 import { useLang } from "@/lib/LangProvider";
+import Reveal from "./Reveal";
 
 export default function Events() {
   const { t } = useLang();
   return (
     <section id="events">
       <div className="wrap">
-        <div className="events-card">
+        <Reveal className="events-card">
           <div>
             <span className="eyebrow">{t.eventsEyebrow}</span>
             <h3>{t.eventsH3}</h3>
@@ -23,7 +24,7 @@ export default function Events() {
               {t.eventsCta}
             </a>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

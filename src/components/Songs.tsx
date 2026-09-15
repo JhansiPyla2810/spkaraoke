@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useLang } from "@/lib/LangProvider";
+import Reveal from "./Reveal";
 
 export type Song = { id: number; title: string; movie: string; hero: string };
 
@@ -25,11 +26,11 @@ export default function Songs({ songs, totalCount }: { songs: Song[]; totalCount
   return (
     <section id="songs">
       <div className="wrap">
-        <div className="section-head">
+        <Reveal className="section-head">
           <span className="eyebrow">{t.songsEyebrow}</span>
           <h2>{t.songsH2}</h2>
           <p>{t.songsP}</p>
-        </div>
+        </Reveal>
         <div className="filters">
           <input
             type="search"

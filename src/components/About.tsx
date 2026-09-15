@@ -1,6 +1,7 @@
 "use client";
 
 import { useLang } from "@/lib/LangProvider";
+import Reveal from "./Reveal";
 
 export default function About() {
   const { t } = useLang();
@@ -12,7 +13,7 @@ export default function About() {
   ];
   return (
     <section id="about">
-      <div className="wrap about-grid">
+      <Reveal className="wrap about-grid">
         <div>
           <span className="eyebrow">{t.aboutEyebrow}</span>
           <h2 style={{ marginTop: 10 }}>{t.aboutH2}</h2>
@@ -33,7 +34,7 @@ export default function About() {
             </div>
           ))}
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

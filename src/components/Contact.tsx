@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLang } from "@/lib/LangProvider";
+import Reveal from "./Reveal";
 
 const CONTACT_EMAIL = "sivapyla8981@gmail.com";
 
@@ -25,7 +26,7 @@ export default function Contact() {
 
   return (
     <section id="contact">
-      <div className="wrap contact-grid">
+      <Reveal className="wrap contact-grid">
         <div>
           <span className="eyebrow">{t.contactEyebrow}</span>
           <h2 style={{ marginTop: 10 }}>{t.contactH2}</h2>
@@ -105,7 +106,7 @@ export default function Contact() {
             </div>
           </div>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }
