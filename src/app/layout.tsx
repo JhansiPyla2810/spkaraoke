@@ -2,24 +2,24 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SPKaraoke — Telugu & Hindi Karaoke Tracks, Kakinada",
+  title: "Telugu Karaoke Tracks — 5,000+ Songs | SPKaraoke",
   description:
-    "SPKaraoke is a hand-built karaoke track library with 5,000+ Telugu and 1,000+ Hindi songs, plus karaoke events in Kakinada, India. Browse the catalog or request a song.",
+    "SPKaraoke offers 5,000+ Telugu karaoke tracks and 1,000+ Hindi karaoke tracks, hand-mixed with vocals removed. Browse Telugu karaoke tracks by movie, request a song, or book a karaoke event in Kakinada, India.",
   metadataBase: new URL("https://spkaraoke.vercel.app"),
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: "SPKaraoke",
-    title: "SPKaraoke — Telugu & Hindi Karaoke Tracks",
+    title: "Telugu Karaoke Tracks — 5,000+ Songs | SPKaraoke",
     description:
-      "5,000+ Telugu and 1,000+ Hindi karaoke tracks, hand-mixed. Browse the catalog, book a karaoke event, or request a song.",
+      "5,000+ Telugu karaoke tracks and 1,000+ Hindi karaoke tracks, hand-mixed. Browse the catalog by movie, book a karaoke event, or request a song.",
     url: "https://spkaraoke.vercel.app",
     locale: "en_IN",
   },
   twitter: {
     card: "summary",
-    title: "SPKaraoke — Telugu & Hindi Karaoke Tracks",
-    description: "5,000+ Telugu and 1,000+ Hindi karaoke tracks, hand-mixed in Kakinada, India.",
+    title: "Telugu Karaoke Tracks — 5,000+ Songs | SPKaraoke",
+    description: "5,000+ Telugu karaoke tracks and 1,000+ Hindi karaoke tracks, hand-mixed in Kakinada, India.",
   },
 };
 

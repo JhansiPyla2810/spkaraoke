@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useLang } from "@/lib/LangProvider";
 import Reveal from "./Reveal";
 
@@ -76,6 +77,11 @@ export default function Songs({ songs, totalCount }: { songs: Song[]; totalCount
           {t.songsNoteMid}
           <a href="#contact">{t.songsNoteLink}</a>
           {t.songsNoteSuffix}
+        </p>
+        <p className="catalog-note">
+          <Link href="/songs" style={{ color: "var(--accent)", fontWeight: 700, textDecoration: "none" }}>
+            Browse all Telugu karaoke tracks by movie →
+          </Link>
         </p>
       </div>
     </section>
