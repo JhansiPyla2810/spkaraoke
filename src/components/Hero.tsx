@@ -1,6 +1,7 @@
 "use client";
 
 import { useLang } from "@/lib/LangProvider";
+import CountUp from "./CountUp";
 
 export default function Hero() {
   const { t } = useLang();
@@ -20,9 +21,9 @@ export default function Hero() {
             <a className="btn btn-ghost" href="#contact">{t.heroAccess}</a>
           </div>
           <div className="stat-strip">
-            <div className="stat"><b>5,000+</b><span>{t.statTelugu}</span></div>
-            <div className="stat"><b>1,000+</b><span>{t.statHindi}</span></div>
-            <div className="stat"><b>1,860</b><span>{t.statHrs}</span></div>
+            <div className="stat"><b><CountUp to={5000} suffix="+" /></b><span>{t.statTelugu}</span></div>
+            <div className="stat"><b><CountUp to={1000} suffix="+" /></b><span>{t.statHindi}</span></div>
+            <div className="stat"><b><CountUp to={1860} /></b><span>{t.statHrs}</span></div>
           </div>
         </div>
         <figure className="hero-photo">
