@@ -12,7 +12,7 @@ export default function Nav() {
   useEffect(() => {
     function updateActive() {
       const probe = window.scrollY + window.innerHeight * 0.3;
-      let current = SECTIONS[0];
+      let current: (typeof SECTIONS)[number] = SECTIONS[0];
       for (const id of SECTIONS) {
         const el = document.getElementById(id);
         if (el && el.offsetTop <= probe) current = id;
