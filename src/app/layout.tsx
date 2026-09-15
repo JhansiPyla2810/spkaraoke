@@ -2,15 +2,15 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Telugu Karaoke Tracks — 5,000+ Songs | SatyaPylaKaraoke",
+  title: "Telugu Karaoke Tracks — 5,000+ Songs | SatyaPyla Karaoke",
   description:
-    "SatyaPylaKaraoke offers 5,000+ Telugu karaoke tracks and 1,000+ Hindi karaoke tracks, hand-mixed with vocals removed. Browse Telugu karaoke tracks by movie, request a song, or book a karaoke event in Kakinada, India.",
+    "SatyaPyla Karaoke offers 5,000+ Telugu karaoke tracks and 1,000+ Hindi karaoke tracks, hand-mixed with vocals removed. Browse Telugu karaoke tracks by movie, request a song, or book a karaoke event in Kakinada, India.",
   metadataBase: new URL("https://spkaraoke.vercel.app"),
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
-    siteName: "SatyaPylaKaraoke",
-    title: "Telugu Karaoke Tracks — 5,000+ Songs | SatyaPylaKaraoke",
+    siteName: "SatyaPyla Karaoke",
+    title: "Telugu Karaoke Tracks — 5,000+ Songs | SatyaPyla Karaoke",
     description:
       "5,000+ Telugu karaoke tracks and 1,000+ Hindi karaoke tracks, hand-mixed. Browse the catalog by movie, book a karaoke event, or request a song.",
     url: "https://spkaraoke.vercel.app",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Telugu Karaoke Tracks — 5,000+ Songs | SatyaPylaKaraoke",
+    title: "Telugu Karaoke Tracks — 5,000+ Songs | SatyaPyla Karaoke",
     description: "5,000+ Telugu karaoke tracks and 1,000+ Hindi karaoke tracks, hand-mixed in Kakinada, India.",
   },
 };
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
-  name: "SatyaPylaKaraoke",
+  name: "SatyaPyla Karaoke",
   description:
     "Hand-built Telugu and Hindi karaoke track library with 5,000+ Telugu and 1,000+ Hindi songs, plus karaoke events.",
   url: "https://spkaraoke.vercel.app/",
