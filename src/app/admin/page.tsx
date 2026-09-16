@@ -13,7 +13,7 @@ export default async function AdminLoginPage({
   return (
     <div style={{ maxWidth: 380, margin: "80px auto", padding: "0 24px" }}>
       <h1 style={{ fontFamily: "Archivo, sans-serif", fontSize: "1.5rem", marginBottom: 20 }}>
-        SatyaPyla Karaoke Admin
+        Satya Pyla Karaoke Admin
       </h1>
       <form action={login} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div className="form-row">

@@ -27,9 +27,9 @@ export default function Hero() {
           </div>
         </div>
         <figure className="hero-photo">
-          <img src="/assets/owner.jpg" alt="Founder of SatyaPyla Karaoke on stage with a mic" />
+          <img src="/assets/owner.jpg" alt="Founder of Satya Pyla Karaoke on stage with a mic" />
           <figcaption>
-            <b>Founder, SatyaPyla Karaoke</b>
+            <b>Founder, Satya Pyla Karaoke</b>
             <br />
             <span>{t.founderRole}</span>
           </figcaption>

@@ -57,7 +57,7 @@ export default function Nav() {
               </svg>
             </span>
           </span>
-          SatyaPyla Karaoke
+          Satya Pyla Karaoke
         </div>
         <div className="navlinks">
           <a href="#home" className={active === "home" ? "active" : ""}>{t.navHome}</a>

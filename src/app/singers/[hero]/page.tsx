@@ -19,7 +19,7 @@ export async function generateMetadata({
   const hero = await getHeroBySlug(slug);
   if (!hero || hero.count < MIN_SONGS_FOR_PAGE) return {};
   return {
-    title: `${hero.hero} Telugu Karaoke Tracks (${hero.count} songs) | SatyaPyla Karaoke`,
+    title: `${hero.hero} Telugu Karaoke Tracks (${hero.count} songs) | Satya Pyla Karaoke`,
     description: `Telugu karaoke tracks featuring ${hero.hero} — ${hero.count} karaoke tracks, vocals removed, pitch true to the original, ready to sing.`,
     alternates: { canonical: `/singers/${hero.slug}` },
   };
