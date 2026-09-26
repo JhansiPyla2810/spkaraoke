@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { desc } from "drizzle-orm";
 import { isAuthed } from "@/lib/auth";
@@ -16,9 +17,12 @@ export default async function DashboardPage() {
         <h1 style={{ fontFamily: "Archivo, sans-serif", fontSize: "1.5rem" }}>
           Songs ({allSongs.length})
         </h1>
-        <form action={logout}>
-          <button className="btn btn-ghost" type="submit">Log out</button>
-        </form>
+        <div style={{ display: "flex", gap: 10 }}>
+          <Link className="btn btn-ghost" href="/admin/events">Event access →</Link>
+          <form action={logout}>
+            <button className="btn btn-ghost" type="submit">Log out</button>
+          </form>
+        </div>
       </div>
 
       <form
