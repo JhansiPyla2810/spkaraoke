@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { events, accessGrants } from "@/lib/schema";
 import { isGoogleConnected } from "@/lib/googleAuth";
 import { createGrant, revokeGrant, lockdownEvent } from "../actions";
+import ExpiryInput from "./ExpiryInput";
 
 export default async function EventDetailPage({
   params,
@@ -82,14 +83,12 @@ export default async function EventDetailPage({
         style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, marginBottom: 32, alignItems: "end" }}
       >
         <input type="hidden" name="eventId" value={event.id} />
+        <input type="hidden" name="expiresAtMs" />
         <div className="form-row" style={{ marginBottom: 0 }}>
           <label htmlFor="clientName">Client name</label>
           <input id="clientName" name="clientName" required />
         </div>
-        <div className="form-row" style={{ marginBottom: 0 }}>
-          <label htmlFor="expiresAt">Access expires at</label>
-          <input id="expiresAt" name="expiresAt" type="datetime-local" required />
-        </div>
+        <ExpiryInput />
         <button className="btn btn-primary" type="submit">Generate link</button>
       </form>
 

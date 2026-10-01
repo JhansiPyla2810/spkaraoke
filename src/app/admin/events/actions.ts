@@ -32,11 +32,8 @@ export async function deleteEvent(formData: FormData) {
 export async function createGrant(formData: FormData) {
   const eventId = Number(formData.get("eventId"));
   const clientName = String(formData.get("clientName") ?? "").trim();
-  const expiresAtLocal = String(formData.get("expiresAt") ?? "");
-  if (!eventId || !clientName || !expiresAtLocal) return;
-
-  const expiresAt = new Date(expiresAtLocal).getTime();
-  if (Number.isNaN(expiresAt)) return;
+  const expiresAt = Number(formData.get("expiresAtMs"));
+  if (!eventId || !clientName || !expiresAt || Number.isNaN(expiresAt)) return;
 
   const token = generateAccessToken();
   await db.insert(accessGrants).values({

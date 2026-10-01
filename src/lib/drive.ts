@@ -20,21 +20,32 @@ export async function listVideosInFolder(folderId: string): Promise<DriveVideoFi
   const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
   if (!apiKey) throw new Error('GOOGLE_DRIVE_API_KEY env var is not set');
 
-  const params = new URLSearchParams({
-    q: `'${folderId}' in parents and mimeType contains 'video/' and trashed = false`,
-    fields: 'files(id,name,mimeType)',
-    key: apiKey,
-    supportsAllDrives: 'true',
-    includeItemsFromAllDrives: 'true',
-  });
+  const files: DriveVideoFile[] = [];
+  let pageToken: string | undefined;
 
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`);
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Drive API error (${res.status}): ${body}`);
-  }
-  const data = (await res.json()) as { files?: DriveVideoFile[] };
-  return data.files ?? [];
+  do {
+    const params = new URLSearchParams({
+      q: `'${folderId}' in parents and mimeType contains 'video/' and trashed = false`,
+      fields: 'nextPageToken,files(id,name,mimeType)',
+      orderBy: 'name_natural',
+      pageSize: '1000',
+      key: apiKey,
+      supportsAllDrives: 'true',
+      includeItemsFromAllDrives: 'true',
+    });
+    if (pageToken) params.set('pageToken', pageToken);
+
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`);
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Drive API error (${res.status}): ${body}`);
+    }
+    const data = (await res.json()) as { files?: DriveVideoFile[]; nextPageToken?: string };
+    files.push(...(data.files ?? []));
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+
+  return files;
 }
 
 // Lists videos using an OAuth access token (rather than the read-only API

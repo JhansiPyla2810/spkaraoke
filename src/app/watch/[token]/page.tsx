@@ -2,6 +2,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accessGrants, events } from "@/lib/schema";
 import { listVideosInFolder } from "@/lib/drive";
+import VideoGallery from "./VideoGallery";
+import AutoExpireWatcher from "./AutoExpireWatcher";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +20,11 @@ function ExpiredNotice({ message }: { message: string }) {
   );
 }
 
-export default async function WatchPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function WatchPage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
   const { token } = await params;
 
   const [grant] = await db.select().from(accessGrants).where(eq(accessGrants.token, token));
@@ -41,6 +47,7 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
 
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 24px 80px" }}>
+      <AutoExpireWatcher expiresAt={grant.expiresAt} />
       <div
         style={{
           border: "1px solid var(--line)",
@@ -71,31 +78,7 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
         <p style={{ color: "var(--muted)" }}>No videos have been added to this event yet.</p>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-        {videos.map((v) => (
-          <div key={v.id}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>{v.name}</div>
-            <div
-              style={{
-                position: "relative",
-                width: "100%",
-                aspectRatio: "16/9",
-                borderRadius: 10,
-                overflow: "hidden",
-                border: "1px solid var(--line)",
-                background: "#000",
-              }}
-            >
-              <iframe
-                src={`https://drive.google.com/file/d/${v.id}/preview`}
-                allow="autoplay"
-                style={{ width: "100%", height: "100%", border: "none" }}
-                allowFullScreen
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+      {!loadError && videos.length > 0 && <VideoGallery videos={videos} />}
     </div>
   );
 }
