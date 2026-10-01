@@ -4,6 +4,7 @@ import { accessGrants, events } from "@/lib/schema";
 import { listVideosInFolder } from "@/lib/drive";
 import VideoGallery from "./VideoGallery";
 import AutoExpireWatcher from "./AutoExpireWatcher";
+import LocalTime from "@/app/components/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -43,8 +44,6 @@ export default async function WatchPage({
     loadError = true;
   }
 
-  const expiresLabel = new Date(grant.expiresAt).toLocaleString();
-
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 24px 80px" }}>
       <AutoExpireWatcher expiresAt={grant.expiresAt} />
@@ -65,7 +64,9 @@ export default async function WatchPage({
         <span>
           Hi <b>{grant.clientName}</b> — welcome to <b>{event.name}</b>
         </span>
-        <span style={{ color: "var(--muted)" }}>Access expires {expiresLabel}</span>
+        <span style={{ color: "var(--muted)" }}>
+          Access expires <LocalTime ms={grant.expiresAt} />
+        </span>
       </div>
 
       {loadError && (

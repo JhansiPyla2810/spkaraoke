@@ -8,6 +8,7 @@ import { events, accessGrants } from "@/lib/schema";
 import { isGoogleConnected } from "@/lib/googleAuth";
 import { createGrant, revokeGrant, lockdownEvent } from "../actions";
 import ExpiryInput from "./ExpiryInput";
+import LocalTime from "@/app/components/LocalTime";
 
 export default async function EventDetailPage({
   params,
@@ -129,7 +130,7 @@ export default async function EventDetailPage({
                       )}
                     </td>
                     <td style={{ fontSize: ".82rem", color: "var(--muted)" }}>
-                      {new Date(g.expiresAt).toLocaleString()}
+                      <LocalTime ms={g.expiresAt} />
                     </td>
                     <td style={{ fontSize: ".82rem", fontWeight: 700, color: statusColor }}>{status}</td>
                     <td>
