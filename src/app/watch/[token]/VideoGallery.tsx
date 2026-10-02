@@ -4,6 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type Video = { id: string; name: string };
 
+// Fixed size Drive's embedded player is rendered at internally, before we
+// scale it down to fit the actual visible box — large enough that Drive
+// always treats it as a "desktop" viewport and keeps its normal control
+// bar layout instead of the cramped small-screen one.
+const DRIVE_PLAYER_WIDTH = 960;
+const DRIVE_PLAYER_HEIGHT = 540;
+
 function PlayButton() {
   return (
     <span
@@ -139,6 +146,7 @@ function Lightbox({
   onClose: () => void;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -151,6 +159,20 @@ function Lightbox({
       document.body.style.overflow = "";
     };
   }, [onClose]);
+
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    // Drive's embedded player switches to a cramped, scattered-controls
+    // layout once the iframe gets small. Rendering it at a fixed "desktop"
+    // size and visually scaling it down keeps Drive's normal control bar
+    // layout at any screen size.
+    const update = () => setScale(el.clientWidth / DRIVE_PLAYER_WIDTH);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div
@@ -232,11 +254,20 @@ function Lightbox({
             background: "#000",
           }}
         >
-          <iframe
-            src={`https://drive.google.com/file/d/${video.id}/preview`}
-            allow="autoplay"
-            style={{ width: "100%", height: "100%", border: "none" }}
-          />
+          <div
+            style={{
+              width: DRIVE_PLAYER_WIDTH,
+              height: DRIVE_PLAYER_HEIGHT,
+              transform: `scale(${scale})`,
+              transformOrigin: "top left",
+            }}
+          >
+            <iframe
+              src={`https://drive.google.com/file/d/${video.id}/preview`}
+              allow="autoplay"
+              style={{ width: DRIVE_PLAYER_WIDTH, height: DRIVE_PLAYER_HEIGHT, border: "none" }}
+            />
+          </div>
           <Watermark clientName={clientName} expiresAt={expiresAt} />
         </div>
       </div>
