@@ -1,60 +1,243 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Video = { id: string; name: string };
 
-function VideoCard({ video }: { video: Video }) {
-  const [playing, setPlaying] = useState(false);
-
+function PlayButton() {
   return (
-    <div>
-      <div style={{ fontWeight: 700, marginBottom: 8 }}>{video.name}</div>
+    <span
+      style={{
+        width: 56,
+        height: 56,
+        borderRadius: "50%",
+        background: "var(--brand-gradient)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 10px 24px -8px rgba(0,0,0,.5)",
+      }}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--accent-ink)">
+        <path d="M8 5v14l11-7z" />
+      </svg>
+    </span>
+  );
+}
+
+function VideoCard({ video, onOpen }: { video: Video; onOpen: (v: Video) => void }) {
+  return (
+    <div
+      style={{
+        border: "1px solid var(--line)",
+        borderRadius: 14,
+        overflow: "hidden",
+        background: "var(--surface)",
+        boxShadow: "0 16px 32px -24px rgba(0,0,0,.28)",
+        transition: "transform .2s ease, box-shadow .2s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-2px)";
+        e.currentTarget.style.boxShadow = "0 20px 40px -22px rgba(0,0,0,.32)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow = "0 16px 32px -24px rgba(0,0,0,.28)";
+      }}
+    >
       <div
         style={{
           position: "relative",
           width: "100%",
           aspectRatio: "16/9",
-          borderRadius: 10,
-          overflow: "hidden",
-          border: "1px solid var(--line)",
           background: "#000",
         }}
       >
-        {playing ? (
-          <iframe
-            src={`https://drive.google.com/file/d/${video.id}/preview`}
-            allow="autoplay"
-            style={{ width: "100%", height: "100%", border: "none" }}
-            allowFullScreen
-          />
-        ) : (
-          <button
-            onClick={() => setPlaying(true)}
-            style={{
-              width: "100%",
-              height: "100%",
-              border: "none",
-              background: "none",
-              cursor: "pointer",
-              color: "#fff",
-              fontSize: "1rem",
-              fontWeight: 700,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            ▶ Play
-          </button>
-        )}
+        <button
+          onClick={() => onOpen(video)}
+          aria-label={`Play ${video.name}`}
+          style={{
+            width: "100%",
+            height: "100%",
+            border: "none",
+            background:
+              "linear-gradient(135deg, color-mix(in srgb, var(--accent) 35%, #000), color-mix(in srgb, var(--accent-warm) 35%, #000))",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <PlayButton />
+        </button>
+      </div>
+      <div style={{ padding: "12px 14px" }}>
+        <div
+          style={{
+            fontWeight: 700,
+            fontSize: ".92rem",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+          title={video.name}
+        >
+          {video.name}
+        </div>
       </div>
     </div>
   );
 }
 
-export default function VideoGallery({ videos }: { videos: Video[] }) {
+function Watermark({ clientName, expiresAt }: { clientName: string; expiresAt: number }) {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 40,
+        left: 14,
+        textAlign: "left",
+        color: "rgba(255,255,255,.95)",
+        background: "rgba(0,0,0,.5)",
+        padding: "10px 16px",
+        borderRadius: 8,
+        pointerEvents: "none",
+        zIndex: 2,
+        lineHeight: 1.5,
+      }}
+    >
+      <div style={{ fontSize: "1rem", fontWeight: 700 }}>
+        Temporary access for {clientName} &middot; expires {new Date(expiresAt).toLocaleString()}
+      </div>
+      <div style={{ fontSize: ".84rem", color: "rgba(255,255,255,.85)" }}>
+        &copy; {now.getFullYear()} Satya Pyla Karaoke
+      </div>
+      <div style={{ fontSize: ".78rem", color: "rgba(255,255,255,.65)" }}>{now.toLocaleString()}</div>
+    </div>
+  );
+}
+
+function Lightbox({
+  video,
+  clientName,
+  expiresAt,
+  onClose,
+}: {
+  video: Video;
+  clientName: string;
+  expiresAt: number;
+  onClose: () => void;
+}) {
+  const stageRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,.82)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: "100%", maxWidth: 960 }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: ".95rem" }}>{video.name}</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => stageRef.current?.requestFullscreen()}
+              aria-label="Fullscreen"
+              style={{
+                background: "rgba(255,255,255,.12)",
+                border: "none",
+                color: "#fff",
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                cursor: "pointer",
+                fontSize: ".9rem",
+              }}
+            >
+              ⛶
+            </button>
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              style={{
+                background: "rgba(255,255,255,.12)",
+                border: "none",
+                color: "#fff",
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                cursor: "pointer",
+                fontSize: "1rem",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        <div
+          ref={stageRef}
+          style={{
+            position: "relative",
+            width: "100%",
+            aspectRatio: "16/9",
+            borderRadius: 10,
+            overflow: "hidden",
+            background: "#000",
+          }}
+        >
+          <iframe
+            src={`https://drive.google.com/file/d/${video.id}/preview`}
+            allow="autoplay"
+            style={{ width: "100%", height: "100%", border: "none" }}
+          />
+          <Watermark clientName={clientName} expiresAt={expiresAt} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function VideoGallery({
+  videos,
+  clientName,
+  expiresAt,
+}: {
+  videos: Video[];
+  clientName: string;
+  expiresAt: number;
+}) {
   const [query, setQuery] = useState("");
+  const [activeVideo, setActiveVideo] = useState<Video | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -64,22 +247,26 @@ export default function VideoGallery({ videos }: { videos: Video[] }) {
 
   return (
     <div>
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 24 }}>
         <input
-          type="text"
+          type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={`Search ${videos.length} video${videos.length === 1 ? "" : "s"}...`}
           style={{
             width: "100%",
-            padding: "10px 14px",
-            borderRadius: 8,
+            maxWidth: 420,
+            background: "var(--surface)",
             border: "1px solid var(--line)",
-            fontSize: ".95rem",
+            color: "var(--ink)",
+            padding: "11px 14px",
+            borderRadius: 8,
+            fontFamily: "Manrope, sans-serif",
+            fontSize: ".92rem",
           }}
         />
         {query && (
-          <p style={{ color: "var(--muted)", fontSize: ".82rem", marginTop: 6 }}>
+          <p style={{ color: "var(--muted)", fontSize: ".82rem", marginTop: 8 }}>
             {filtered.length} match{filtered.length === 1 ? "" : "es"}
           </p>
         )}
@@ -88,11 +275,26 @@ export default function VideoGallery({ videos }: { videos: Video[] }) {
       {filtered.length === 0 ? (
         <p style={{ color: "var(--muted)" }}>No videos match &quot;{query}&quot;.</p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+            gap: 20,
+          }}
+        >
           {filtered.map((v) => (
-            <VideoCard key={v.id} video={v} />
+            <VideoCard key={v.id} video={v} onOpen={setActiveVideo} />
           ))}
         </div>
+      )}
+
+      {activeVideo && (
+        <Lightbox
+          video={activeVideo}
+          clientName={clientName}
+          expiresAt={expiresAt}
+          onClose={() => setActiveVideo(null)}
+        />
       )}
     </div>
   );

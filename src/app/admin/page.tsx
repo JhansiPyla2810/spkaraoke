@@ -7,7 +7,7 @@ export default async function AdminLoginPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  if (await isAuthed()) redirect("/admin/dashboard");
+  if (await isAuthed()) redirect("/admin/events");
   const { error } = await searchParams;
 
   return (

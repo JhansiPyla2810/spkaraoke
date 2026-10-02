@@ -1,3 +1,9 @@
+export type DriveVideoFile = {
+  id: string;
+  name: string;
+  mimeType: string;
+};
+
 // Extracts a Drive folder ID from a pasted share link, or returns the input
 // as-is if it already looks like a bare ID.
 export function extractDriveFolderId(input: string): string | null {
@@ -10,37 +16,40 @@ export function extractDriveFolderId(input: string): string | null {
   return null;
 }
 
-export type DriveVideoFile = {
-  id: string;
-  name: string;
-  mimeType: string;
-};
 
-export async function listVideosInFolder(folderId: string): Promise<DriveVideoFile[]> {
-  const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
-  if (!apiKey) throw new Error('GOOGLE_DRIVE_API_KEY env var is not set');
-
-  const files: DriveVideoFile[] = [];
+// Lists videos using an OAuth access token (rather than the read-only API
+// key) — this is what lets us see/list files in a folder that is NOT
+// link-shared (restricted to specific people), since an API key alone has
+// no identity and can only read publicly-shared content.
+export async function listVideosWithAccessToken(
+  folderId: string,
+  accessToken: string
+): Promise<(DriveVideoFile & { copyRequiresWriterPermission?: boolean })[]> {
+  const files: (DriveVideoFile & { copyRequiresWriterPermission?: boolean })[] = [];
   let pageToken: string | undefined;
 
   do {
     const params = new URLSearchParams({
       q: `'${folderId}' in parents and mimeType contains 'video/' and trashed = false`,
-      fields: 'nextPageToken,files(id,name,mimeType)',
+      fields: 'nextPageToken,files(id,name,mimeType,copyRequiresWriterPermission)',
       orderBy: 'name_natural',
       pageSize: '1000',
-      key: apiKey,
       supportsAllDrives: 'true',
       includeItemsFromAllDrives: 'true',
     });
     if (pageToken) params.set('pageToken', pageToken);
 
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`);
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
     if (!res.ok) {
       const body = await res.text();
       throw new Error(`Drive API error (${res.status}): ${body}`);
     }
-    const data = (await res.json()) as { files?: DriveVideoFile[]; nextPageToken?: string };
+    const data = (await res.json()) as {
+      files?: (DriveVideoFile & { copyRequiresWriterPermission?: boolean })[];
+      nextPageToken?: string;
+    };
     files.push(...(data.files ?? []));
     pageToken = data.nextPageToken;
   } while (pageToken);
@@ -48,25 +57,93 @@ export async function listVideosInFolder(folderId: string): Promise<DriveVideoFi
   return files;
 }
 
-// Lists videos using an OAuth access token (rather than the read-only API
-// key) — needed so we can see files even if the folder's public sharing
-// hasn't been fully set up yet, and as a shared code path with lockdown.
-async function listVideosWithAccessToken(folderId: string, accessToken: string): Promise<DriveVideoFile[]> {
-  const params = new URLSearchParams({
-    q: `'${folderId}' in parents and mimeType contains 'video/' and trashed = false`,
-    fields: 'files(id,name,mimeType,copyRequiresWriterPermission)',
-    supportsAllDrives: 'true',
-    includeItemsFromAllDrives: 'true',
-  });
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`, {
+export type DriveFileDetails = DriveVideoFile & { size?: string };
+
+// Lists every file (not just videos) in a folder, for the admin file-manager.
+export async function listFolderFiles(folderId: string, accessToken: string): Promise<DriveFileDetails[]> {
+  const files: DriveFileDetails[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const params = new URLSearchParams({
+      q: `'${folderId}' in parents and trashed = false`,
+      fields: 'nextPageToken,files(id,name,mimeType,size)',
+      orderBy: 'name_natural',
+      pageSize: '1000',
+      supportsAllDrives: 'true',
+      includeItemsFromAllDrives: 'true',
+    });
+    if (pageToken) params.set('pageToken', pageToken);
+
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Drive API error (${res.status}): ${body}`);
+    }
+    const data = (await res.json()) as { files?: DriveFileDetails[]; nextPageToken?: string };
+    files.push(...(data.files ?? []));
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+
+  return files;
+}
+
+// Starts a resumable upload session and returns the session URL. The actual
+// file bytes are then PUT directly from the browser to that URL, bypassing
+// our own server so large video uploads don't hit serverless body-size limits.
+export async function createResumableUploadSession(
+  folderId: string,
+  fileName: string,
+  mimeType: string,
+  accessToken: string
+): Promise<string> {
+  const res = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'X-Upload-Content-Type': mimeType,
+      },
+      body: JSON.stringify({ name: fileName, parents: [folderId] }),
+    }
+  );
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Drive upload session error (${res.status}): ${body}`);
+  }
+  const location = res.headers.get('Location');
+  if (!location) throw new Error('Drive did not return an upload session URL');
+  return location;
+}
+
+export async function deleteFile(fileId: string, accessToken: string): Promise<void> {
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?supportsAllDrives=true`, {
+    method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok && res.status !== 404) {
+    const body = await res.text();
+    throw new Error(`Drive delete error (${res.status}): ${body}`);
+  }
+}
+
+export async function renameFile(fileId: string, newName: string, accessToken: string): Promise<void> {
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?supportsAllDrives=true`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name: newName }),
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Drive API error (${res.status}): ${body}`);
+    throw new Error(`Drive rename error (${res.status}): ${body}`);
   }
-  const data = (await res.json()) as { files?: (DriveVideoFile & { copyRequiresWriterPermission?: boolean })[] };
-  return data.files ?? [];
 }
 
 export type LockdownResult = {
@@ -107,4 +184,76 @@ export async function lockdownFolderVideos(folderId: string, accessToken: string
   }
 
   return result;
+}
+
+// Grants a specific person viewer access to the event folder, by email —
+// restricted Drive sharing, not "anyone with the link". Returns the
+// permission ID so it can be revoked later (on manual revoke or expiry).
+export async function grantFolderAccess(
+  folderId: string,
+  email: string,
+  accessToken: string
+): Promise<string> {
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${folderId}/permissions?supportsAllDrives=true&sendNotificationEmail=false&fields=id`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ role: 'reader', type: 'user', emailAddress: email }),
+    }
+  );
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Drive permission grant error (${res.status}): ${body}`);
+  }
+  const data = (await res.json()) as { id: string };
+  return data.id;
+}
+
+export async function revokeFolderAccess(
+  folderId: string,
+  permissionId: string,
+  accessToken: string
+): Promise<void> {
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${folderId}/permissions/${permissionId}?supportsAllDrives=true`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+  if (!res.ok && res.status !== 404) {
+    const body = await res.text();
+    throw new Error(`Drive permission revoke error (${res.status}): ${body}`);
+  }
+}
+
+// Creates a new subfolder inside the designated parent "Events" folder, so
+// an admin can set up an event entirely from our UI without ever touching
+// Drive directly or needing their own access to the parent folder.
+export async function createEventFolder(name: string, accessToken: string): Promise<string> {
+  const parentId = process.env.DRIVE_PARENT_FOLDER_ID;
+  if (!parentId) throw new Error('DRIVE_PARENT_FOLDER_ID env var is not set');
+
+  const res = await fetch('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [parentId],
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Drive folder create error (${res.status}): ${body}`);
+  }
+  const data = (await res.json()) as { id: string };
+  return data.id;
 }

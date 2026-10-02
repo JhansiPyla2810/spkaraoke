@@ -21,9 +21,25 @@ export const accessGrants = sqliteTable('access_grants', {
   token: text('token').notNull().unique(),
   eventId: integer('event_id').notNull(),
   clientName: text('client_name').notNull(),
+  clientEmail: text('client_email').notNull().default(''),
   expiresAt: integer('expires_at').notNull(),
   revoked: integer('revoked', { mode: 'boolean' }).notNull().default(false),
+  // Drive permission ID granting this client's email viewer access to the
+  // event's folder. Cleared once that Drive-level access has been revoked
+  // (on manual revoke, on expiry cleanup, or via the daily cron sweep).
+  drivePermissionId: text('drive_permission_id'),
   createdAt: integer('created_at').notNull(),
+});
+
+// One row per /watch/[token] page load, so we can tell if a single link is
+// being viewed from many different devices/locations — a real signal that
+// it's been forwarded beyond the one client it was generated for.
+export const accessViews = sqliteTable('access_views', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  grantId: integer('grant_id').notNull(),
+  ip: text('ip').notNull(),
+  userAgent: text('user_agent').notNull(),
+  viewedAt: integer('viewed_at').notNull(),
 });
 
 // Single row holding the admin's Google OAuth refresh token, so the app can

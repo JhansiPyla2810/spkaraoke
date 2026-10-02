@@ -13,7 +13,7 @@ export async function login(formData: FormData) {
     redirect("/admin?error=1");
   }
   await createSession();
-  redirect("/admin/dashboard");
+  redirect("/admin/events");
 }
 
 export async function logout() {

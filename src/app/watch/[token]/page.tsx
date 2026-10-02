@@ -1,7 +1,10 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accessGrants, events } from "@/lib/schema";
-import { listVideosInFolder } from "@/lib/drive";
+import { listVideosWithAccessToken } from "@/lib/drive";
+import { getAccessTokenFromRefreshToken } from "@/lib/googleAuth";
+import { cleanupGrantDriveAccess } from "@/lib/grantCleanup";
+import { logAccessView } from "@/lib/accessViews";
 import VideoGallery from "./VideoGallery";
 import AutoExpireWatcher from "./AutoExpireWatcher";
 import LocalTime from "@/app/components/LocalTime";
@@ -31,42 +34,62 @@ export default async function WatchPage({
   const [grant] = await db.select().from(accessGrants).where(eq(accessGrants.token, token));
   if (!grant) return <ExpiredNotice message="This link isn't valid." />;
   if (grant.revoked) return <ExpiredNotice message="This link has been revoked." />;
-  if (grant.expiresAt < Date.now()) return <ExpiredNotice message="This link has expired." />;
+  if (grant.expiresAt < Date.now()) {
+    await cleanupGrantDriveAccess(grant);
+    return <ExpiredNotice message="This link has expired." />;
+  }
 
   const [event] = await db.select().from(events).where(eq(events.id, grant.eventId));
   if (!event) return <ExpiredNotice message="This link isn't valid." />;
 
+  try {
+    await logAccessView(grant.id);
+  } catch (e) {
+    console.error("Failed to log access view", e);
+  }
+
   let videos: { id: string; name: string }[] = [];
   let loadError = false;
   try {
-    videos = await listVideosInFolder(event.driveFolderId);
+    const accessToken = await getAccessTokenFromRefreshToken();
+    videos = await listVideosWithAccessToken(event.driveFolderId, accessToken);
   } catch {
     loadError = true;
   }
 
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 24px 80px" }}>
+    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "48px 20px 80px" }}>
       <AutoExpireWatcher expiresAt={grant.expiresAt} />
+
       <div
         style={{
+          borderRadius: 16,
+          padding: "28px 28px",
+          marginBottom: 32,
+          position: "relative",
+          overflow: "hidden",
+          background: "var(--surface)",
           border: "1px solid var(--line)",
-          background: "var(--surface2)",
-          borderRadius: 10,
-          padding: "12px 18px",
-          marginBottom: 28,
-          display: "flex",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 8,
-          fontSize: ".86rem",
+          boxShadow: "0 24px 48px -32px rgba(0,0,0,.28)",
         }}
       >
-        <span>
-          Hi <b>{grant.clientName}</b> — welcome to <b>{event.name}</b>
-        </span>
-        <span style={{ color: "var(--muted)" }}>
-          Access expires <LocalTime ms={grant.expiresAt} />
-        </span>
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 4,
+            background: "var(--brand-gradient)",
+          }}
+        />
+        <p className="eyebrow" style={{ marginBottom: 6 }}>
+          Hi {grant.clientName}, welcome to
+        </p>
+        <h1 style={{ fontSize: "clamp(1.4rem, 3vw, 2rem)", marginBottom: 10 }}>{event.name}</h1>
+        <p style={{ color: "var(--muted)", fontSize: ".9rem", margin: 0 }}>
+          Access expires <b style={{ color: "var(--ink)" }}><LocalTime ms={grant.expiresAt} /></b>
+        </p>
       </div>
 
       {loadError && (
@@ -79,7 +102,9 @@ export default async function WatchPage({
         <p style={{ color: "var(--muted)" }}>No videos have been added to this event yet.</p>
       )}
 
-      {!loadError && videos.length > 0 && <VideoGallery videos={videos} />}
+      {!loadError && videos.length > 0 && (
+        <VideoGallery videos={videos} clientName={grant.clientName} expiresAt={grant.expiresAt} />
+      )}
     </div>
   );
 }
