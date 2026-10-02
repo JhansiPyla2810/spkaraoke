@@ -101,25 +101,28 @@ function Watermark({ clientName, expiresAt }: { clientName: string; expiresAt: n
     <div
       style={{
         position: "absolute",
-        top: 40,
-        left: 14,
+        top: "3%",
+        left: "3%",
         textAlign: "left",
         color: "rgba(255,255,255,.95)",
         background: "rgba(0,0,0,.5)",
-        padding: "10px 16px",
+        padding: "clamp(4px, 1.2vh, 10px) clamp(8px, 2vw, 16px)",
         borderRadius: 8,
         pointerEvents: "none",
         zIndex: 2,
-        lineHeight: 1.5,
+        lineHeight: 1.45,
+        maxWidth: "70%",
       }}
     >
-      <div style={{ fontSize: "1rem", fontWeight: 700 }}>
+      <div style={{ fontSize: "clamp(.6rem, 2vh, .95rem)", fontWeight: 700 }}>
         Temporary access for {clientName} &middot; expires {new Date(expiresAt).toLocaleString()}
       </div>
-      <div style={{ fontSize: ".84rem", color: "rgba(255,255,255,.85)" }}>
+      <div style={{ fontSize: "clamp(.54rem, 1.6vh, .8rem)", color: "rgba(255,255,255,.85)" }}>
         &copy; {now.getFullYear()} Satya Pyla Karaoke
       </div>
-      <div style={{ fontSize: ".78rem", color: "rgba(255,255,255,.65)" }}>{now.toLocaleString()}</div>
+      <div style={{ fontSize: "clamp(.5rem, 1.4vh, .74rem)", color: "rgba(255,255,255,.65)" }}>
+        {now.toLocaleString()}
+      </div>
     </div>
   );
 }
@@ -160,16 +163,28 @@ function Lightbox({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 24,
+        padding: "clamp(8px, 3vw, 24px)",
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{ width: "100%", maxWidth: 960 }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <span style={{ color: "#fff", fontWeight: 700, fontSize: ".95rem" }}>{video.name}</span>
-          <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 10 }}>
+          <span
+            style={{
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: ".95rem",
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {video.name}
+          </span>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
             <button
               onClick={() => stageRef.current?.requestFullscreen()}
               aria-label="Fullscreen"
@@ -182,6 +197,7 @@ function Lightbox({
                 borderRadius: "50%",
                 cursor: "pointer",
                 fontSize: ".9rem",
+                flexShrink: 0,
               }}
             >
               ⛶
@@ -198,6 +214,7 @@ function Lightbox({
                 borderRadius: "50%",
                 cursor: "pointer",
                 fontSize: "1rem",
+                flexShrink: 0,
               }}
             >
               ✕
@@ -278,7 +295,7 @@ export default function VideoGallery({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))",
             gap: 20,
           }}
         >

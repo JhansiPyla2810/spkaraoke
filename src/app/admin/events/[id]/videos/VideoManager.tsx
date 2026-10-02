@@ -69,16 +69,18 @@ function UploadRow({
   }, []);
 
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: ".85rem" }}>
-      <span>{file.name}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, fontSize: ".85rem" }}>
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {file.name}
+      </span>
       {error ? (
-        <span style={{ color: "#B02A37" }} title={error}>
+        <span style={{ color: "#B02A37", flexShrink: 0 }} title={error}>
           {progress === 100
-            ? "Upload may not have finished — check the list below"
-            : "Upload interrupted — try again"}
+            ? "May not have finished — check list"
+            : "Interrupted — try again"}
         </span>
       ) : (
-        <span style={{ color: "var(--muted)" }}>{progress}%</span>
+        <span style={{ color: "var(--muted)", flexShrink: 0 }}>{progress}%</span>
       )}
     </div>
   );
@@ -102,7 +104,7 @@ function FileRow({ file, eventId }: { file: FileItem; eventId: number }) {
                 router.refresh();
               });
             }}
-            style={{ display: "flex", gap: 6 }}
+            style={{ display: "flex", flexWrap: "wrap", gap: 6 }}
           >
             <input type="hidden" name="eventId" value={eventId} />
             <input type="hidden" name="fileId" value={file.id} />
@@ -111,7 +113,7 @@ function FileRow({ file, eventId }: { file: FileItem; eventId: number }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
-              style={{ fontSize: ".85rem", padding: "4px 8px" }}
+              style={{ fontSize: ".85rem", padding: "4px 8px", flex: "1 1 160px", minWidth: 0 }}
             />
             <button className="btn btn-primary" type="submit" disabled={isPending}>
               Save

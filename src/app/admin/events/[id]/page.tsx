@@ -52,7 +52,7 @@ export default async function EventDetailPage({
   const now = Date.now();
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px 80px" }}>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 16px 80px" }}>
       <p style={{ fontSize: ".82rem", marginBottom: 8 }}>
         <Link href="/admin/events" style={{ color: "var(--muted)", textDecoration: "none" }}>
           ← All events
@@ -62,7 +62,7 @@ export default async function EventDetailPage({
         <h1 style={{ fontFamily: "Archivo, sans-serif", fontSize: "1.5rem" }}>
           {event.name}
         </h1>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link href={`/admin/events/${event.id}/videos`} className="btn btn-ghost">
             Manage videos
           </Link>
@@ -108,22 +108,22 @@ export default async function EventDetailPage({
 
       <form
         action={createGrant}
-        style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr 1fr auto", gap: 10, marginBottom: 32, alignItems: "end" }}
+        style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12, alignItems: "end" }}
       >
         <input type="hidden" name="eventId" value={event.id} />
         <input type="hidden" name="expiresAtMs" />
-        <div className="form-row" style={{ marginBottom: 0 }}>
+        <div className="form-row" style={{ marginBottom: 0, flex: "1 1 160px" }}>
           <label htmlFor="clientName">Client name</label>
-          <input id="clientName" name="clientName" required />
+          <input id="clientName" name="clientName" required style={{ width: "100%" }} />
         </div>
-        <div className="form-row" style={{ marginBottom: 0 }}>
+        <div className="form-row" style={{ marginBottom: 0, flex: "1.3 1 200px" }}>
           <label htmlFor="clientEmail">Client&apos;s Google email</label>
-          <input id="clientEmail" name="clientEmail" type="email" required />
+          <input id="clientEmail" name="clientEmail" type="email" required style={{ width: "100%" }} />
         </div>
         <ExpiryInput />
         <button className="btn btn-primary" type="submit">Generate link</button>
       </form>
-      <p style={{ color: "var(--muted)", fontSize: ".82rem", marginTop: -22, marginBottom: 32 }}>
+      <p style={{ color: "var(--muted)", fontSize: ".82rem", marginBottom: 32 }}>
         We&apos;ll grant this exact Google account view access to the event folder on Drive &mdash;
         revoking or letting the link expire removes that access automatically.
       </p>

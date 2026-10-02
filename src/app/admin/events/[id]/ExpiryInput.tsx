@@ -13,13 +13,14 @@ export default function ExpiryInput() {
   const [min] = useState(localMinValue);
 
   return (
-    <div className="form-row" style={{ marginBottom: 0 }}>
+    <div className="form-row" style={{ marginBottom: 0, flex: "1 1 200px" }}>
       <label htmlFor="expiresAt">Access expires at</label>
       <input
         id="expiresAt"
         type="datetime-local"
         min={min}
         required
+        style={{ width: "100%" }}
         onChange={(e) => {
           const form = e.currentTarget.form;
           if (!form) return;

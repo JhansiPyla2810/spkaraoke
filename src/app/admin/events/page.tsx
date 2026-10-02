@@ -20,12 +20,12 @@ export default async function EventsPage({
   const { google_connected, google_error, create_error } = await searchParams;
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px 80px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 16px 80px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28, flexWrap: "wrap", gap: 10 }}>
         <h1 style={{ fontFamily: "Archivo, sans-serif", fontSize: "1.5rem" }}>
           Events ({allEvents.length})
         </h1>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link className="btn btn-ghost" href="/admin/dashboard">Manage songs</Link>
           <form action={logout}>
             <button className="btn btn-ghost" type="submit">Log out</button>
@@ -91,15 +91,20 @@ export default async function EventsPage({
 
       <form
         action={createEvent}
-        style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr auto", gap: 10, marginBottom: 32, alignItems: "end" }}
+        style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 32, alignItems: "end" }}
       >
-        <div className="form-row" style={{ marginBottom: 0 }}>
+        <div className="form-row" style={{ marginBottom: 0, flex: "1 1 180px" }}>
           <label htmlFor="name">Event name</label>
-          <input id="name" name="name" required />
+          <input id="name" name="name" required style={{ width: "100%" }} />
         </div>
-        <div className="form-row" style={{ marginBottom: 0 }}>
+        <div className="form-row" style={{ marginBottom: 0, flex: "2 1 240px" }}>
           <label htmlFor="folderLink">Existing Drive folder link (optional)</label>
-          <input id="folderLink" name="folderLink" placeholder="https://drive.google.com/drive/folders/..." />
+          <input
+            id="folderLink"
+            name="folderLink"
+            placeholder="https://drive.google.com/drive/folders/..."
+            style={{ width: "100%" }}
+          />
         </div>
         <button className="btn btn-primary" type="submit">Add event</button>
       </form>

@@ -64,7 +64,7 @@ export default async function WatchPage({
       <div
         style={{
           borderRadius: 16,
-          padding: "28px 28px",
+          padding: "clamp(18px, 4vw, 28px)",
           marginBottom: 32,
           position: "relative",
           overflow: "hidden",

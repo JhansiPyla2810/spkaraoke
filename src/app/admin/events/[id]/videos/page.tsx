@@ -32,7 +32,7 @@ export default async function EventVideosPage({ params }: { params: Promise<{ id
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px 80px" }}>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 16px 80px" }}>
       <p style={{ fontSize: ".82rem", marginBottom: 8 }}>
         <Link href={`/admin/events/${event.id}`} style={{ color: "var(--muted)", textDecoration: "none" }}>
           ← {event.name}
