@@ -103,7 +103,12 @@ export default async function WatchPage({
       )}
 
       {!loadError && videos.length > 0 && (
-        <VideoGallery videos={videos} clientName={grant.clientName} expiresAt={grant.expiresAt} />
+        <VideoGallery
+          videos={videos}
+          clientName={grant.clientName}
+          expiresAt={grant.expiresAt}
+          grantToken={grant.token}
+        />
       )}
     </div>
   );

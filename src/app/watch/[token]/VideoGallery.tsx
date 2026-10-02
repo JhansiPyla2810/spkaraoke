@@ -1,15 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import VideoPlayer from "./VideoPlayer";
 
 type Video = { id: string; name: string };
-
-// Fixed size Drive's embedded player is rendered at internally, before we
-// scale it down to fit the actual visible box — large enough that Drive
-// always treats it as a "desktop" viewport and keeps its normal control
-// bar layout instead of the cramped small-screen one.
-const DRIVE_PLAYER_WIDTH = 960;
-const DRIVE_PLAYER_HEIGHT = 540;
 
 function PlayButton() {
   return (
@@ -96,193 +90,16 @@ function VideoCard({ video, onOpen }: { video: Video; onOpen: (v: Video) => void
   );
 }
 
-function Watermark({ clientName, expiresAt }: { clientName: string; expiresAt: number }) {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: "3%",
-        left: "3%",
-        textAlign: "left",
-        color: "rgba(255,255,255,.95)",
-        background: "rgba(0,0,0,.5)",
-        padding: "clamp(4px, 1.2vh, 10px) clamp(8px, 2vw, 16px)",
-        borderRadius: 8,
-        pointerEvents: "none",
-        zIndex: 2,
-        lineHeight: 1.45,
-        maxWidth: "70%",
-      }}
-    >
-      <div style={{ fontSize: "clamp(.6rem, 2vh, .95rem)", fontWeight: 700 }}>
-        Temporary access for {clientName} &middot; expires {new Date(expiresAt).toLocaleString()}
-      </div>
-      <div style={{ fontSize: "clamp(.54rem, 1.6vh, .8rem)", color: "rgba(255,255,255,.85)" }}>
-        &copy; {now.getFullYear()} Satya Pyla Karaoke
-      </div>
-      <div style={{ fontSize: "clamp(.5rem, 1.4vh, .74rem)", color: "rgba(255,255,255,.65)" }}>
-        {now.toLocaleString()}
-      </div>
-    </div>
-  );
-}
-
-function Lightbox({
-  video,
-  clientName,
-  expiresAt,
-  onClose,
-}: {
-  video: Video;
-  clientName: string;
-  expiresAt: number;
-  onClose: () => void;
-}) {
-  const stageRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-
-  useEffect(() => {
-    const el = stageRef.current;
-    if (!el) return;
-    // Drive's embedded player switches to a cramped, scattered-controls
-    // layout once the iframe gets small. Rendering it at a fixed "desktop"
-    // size and visually scaling it down keeps Drive's normal control bar
-    // layout at any screen size.
-    const update = () => setScale(el.clientWidth / DRIVE_PLAYER_WIDTH);
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,.82)",
-        zIndex: 1000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "clamp(8px, 3vw, 24px)",
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ width: "100%", maxWidth: 960 }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 10 }}>
-          <span
-            style={{
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: ".95rem",
-              minWidth: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {video.name}
-          </span>
-          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-            <button
-              onClick={() => stageRef.current?.requestFullscreen()}
-              aria-label="Fullscreen"
-              style={{
-                background: "rgba(255,255,255,.12)",
-                border: "none",
-                color: "#fff",
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                cursor: "pointer",
-                fontSize: ".9rem",
-                flexShrink: 0,
-              }}
-            >
-              ⛶
-            </button>
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              style={{
-                background: "rgba(255,255,255,.12)",
-                border: "none",
-                color: "#fff",
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                cursor: "pointer",
-                fontSize: "1rem",
-                flexShrink: 0,
-              }}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-        <div
-          ref={stageRef}
-          style={{
-            position: "relative",
-            width: "100%",
-            aspectRatio: "16/9",
-            borderRadius: 10,
-            overflow: "hidden",
-            background: "#000",
-          }}
-        >
-          <div
-            style={{
-              width: DRIVE_PLAYER_WIDTH,
-              height: DRIVE_PLAYER_HEIGHT,
-              transform: `scale(${scale})`,
-              transformOrigin: "top left",
-            }}
-          >
-            <iframe
-              src={`https://drive.google.com/file/d/${video.id}/preview`}
-              allow="autoplay"
-              style={{ width: DRIVE_PLAYER_WIDTH, height: DRIVE_PLAYER_HEIGHT, border: "none" }}
-            />
-          </div>
-          <Watermark clientName={clientName} expiresAt={expiresAt} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function VideoGallery({
   videos,
   clientName,
   expiresAt,
+  grantToken,
 }: {
   videos: Video[];
   clientName: string;
   expiresAt: number;
+  grantToken: string;
 }) {
   const [query, setQuery] = useState("");
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
@@ -337,8 +154,9 @@ export default function VideoGallery({
       )}
 
       {activeVideo && (
-        <Lightbox
-          video={activeVideo}
+        <VideoPlayer
+          streamUrl={`/api/stream/${activeVideo.id}?token=${grantToken}`}
+          title={activeVideo.name}
           clientName={clientName}
           expiresAt={expiresAt}
           onClose={() => setActiveVideo(null)}

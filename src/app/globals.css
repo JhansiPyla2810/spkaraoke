@@ -411,3 +411,7 @@ body.lang-te .lang-pill, body.lang-te .founder-role, body.lang-te .legend-role, 
 }
 
 ::selection{ background:var(--accent); color:var(--accent-ink); }
+
+@media (max-width: 520px){
+  .player-volume{ display:none; }
+}
