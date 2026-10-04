@@ -22,6 +22,7 @@ export const accessGrants = sqliteTable('access_grants', {
   eventId: integer('event_id').notNull(),
   clientName: text('client_name').notNull(),
   clientEmail: text('client_email').notNull().default(''),
+  startsAt: integer('starts_at').notNull().default(0),
   expiresAt: integer('expires_at').notNull(),
   revoked: integer('revoked', { mode: 'boolean' }).notNull().default(false),
   // Drive permission ID granting this client's email viewer access to the

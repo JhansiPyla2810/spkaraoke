@@ -28,6 +28,10 @@ export async function GET() {
       "ALTER TABLE access_grants ADD COLUMN drive_permission_id TEXT",
       "drive_permission_id column"
     ),
+    await addColumnIfMissing(
+      "ALTER TABLE access_grants ADD COLUMN starts_at INTEGER NOT NULL DEFAULT 0",
+      "starts_at column"
+    ),
   ];
 
   await db.run(

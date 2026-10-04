@@ -7,7 +7,9 @@ import { db } from "@/lib/db";
 import { events, accessGrants, accessViews } from "@/lib/schema";
 import { isGoogleConnected } from "@/lib/googleAuth";
 import { createGrant, revokeGrant, deleteGrant, lockdownEvent } from "../actions";
+import ExtendControl from "./ExtendControl";
 import ExpiryInput from "./ExpiryInput";
+import SubmitButton from "@/app/components/SubmitButton";
 import LocalTime from "@/app/components/LocalTime";
 
 export default async function EventDetailPage({
@@ -52,7 +54,7 @@ export default async function EventDetailPage({
   const now = Date.now();
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 16px 80px" }}>
+    <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 16px 80px" }}>
       <p style={{ fontSize: ".82rem", marginBottom: 8 }}>
         <Link href="/admin/events" style={{ color: "var(--muted)", textDecoration: "none" }}>
           ← All events
@@ -96,10 +98,15 @@ export default async function EventDetailPage({
       )}
       {sp.grant_error === "past" && (
         <p style={{ color: "#B02A37", fontWeight: 600, fontSize: ".9rem", marginBottom: 20 }}>
-          That expiry time has already passed &mdash; double-check AM/PM and pick a time in the future.
+          That end time has already passed &mdash; double-check AM/PM and pick a time in the future.
         </p>
       )}
-      {sp.grant_error && sp.grant_error !== "past" && (
+      {sp.grant_error === "range" && (
+        <p style={{ color: "#B02A37", fontWeight: 600, fontSize: ".9rem", marginBottom: 20 }}>
+          Access must start before it ends &mdash; check the start/end times.
+        </p>
+      )}
+      {sp.grant_error && sp.grant_error !== "past" && sp.grant_error !== "range" && (
         <p style={{ color: "#B02A37", fontWeight: 600, fontSize: ".9rem", marginBottom: 20 }}>
           Couldn&apos;t grant that email access to the Drive folder. Check the email and that Google
           Drive is connected, then try again.
@@ -111,6 +118,7 @@ export default async function EventDetailPage({
         style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12, alignItems: "end" }}
       >
         <input type="hidden" name="eventId" value={event.id} />
+        <input type="hidden" name="startsAtMs" />
         <input type="hidden" name="expiresAtMs" />
         <div className="form-row" style={{ marginBottom: 0, flex: "1 1 160px" }}>
           <label htmlFor="clientName">Client name</label>
@@ -121,7 +129,9 @@ export default async function EventDetailPage({
           <input id="clientEmail" name="clientEmail" type="email" required style={{ width: "100%" }} />
         </div>
         <ExpiryInput />
-        <button className="btn btn-primary" type="submit">Generate link</button>
+        <SubmitButton className="btn btn-primary" pendingLabel="Generating...">
+          Generate event link
+        </SubmitButton>
       </form>
       <p style={{ color: "var(--muted)", fontSize: ".82rem", marginBottom: 32 }}>
         We&apos;ll grant this exact Google account view access to the event folder on Drive &mdash;
@@ -135,6 +145,7 @@ export default async function EventDetailPage({
               <th>Client</th>
               <th>Email</th>
               <th>Link</th>
+              <th>Starts</th>
               <th>Expires</th>
               <th>Status</th>
               <th>Views</th>
@@ -144,22 +155,30 @@ export default async function EventDetailPage({
           <tbody>
             {grants.length === 0 ? (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={8}>
                   <div className="emptystate">No access links yet for this event.</div>
                 </td>
               </tr>
             ) : (
               grants.map((g) => {
                 const expired = g.expiresAt < now;
-                const status = g.revoked ? "Revoked" : expired ? "Expired" : "Active";
-                const statusColor = g.revoked || expired ? "var(--muted)" : "var(--good)";
+                const notStartedYet = g.startsAt > now;
+                const status = g.revoked
+                  ? "Revoked"
+                  : expired
+                    ? "Expired"
+                    : notStartedYet
+                      ? "Scheduled"
+                      : "Active";
+                const statusColor =
+                  status === "Active" ? "var(--good)" : status === "Scheduled" ? "var(--accent-warm)" : "var(--muted)";
                 const link = `${baseUrl}/watch/${g.token}`;
                 return (
                   <tr key={g.id}>
                     <td>{g.clientName}</td>
                     <td style={{ fontSize: ".82rem", color: "var(--muted)" }}>{g.clientEmail}</td>
                     <td style={{ fontSize: ".8rem", maxWidth: 160 }}>
-                      {!g.revoked && !expired ? (
+                      {status === "Active" ? (
                         <a
                           href={link}
                           target="_blank"
@@ -191,6 +210,9 @@ export default async function EventDetailPage({
                       )}
                     </td>
                     <td style={{ fontSize: ".82rem", color: "var(--muted)" }}>
+                      <LocalTime ms={g.startsAt} />
+                    </td>
+                    <td style={{ fontSize: ".82rem", color: "var(--muted)" }}>
                       <LocalTime ms={g.expiresAt} />
                     </td>
                     <td style={{ fontSize: ".82rem", fontWeight: 700, color: statusColor }}>{status}</td>
@@ -212,30 +234,33 @@ export default async function EventDetailPage({
                       })()}
                     </td>
                     <td>
-                      {!g.revoked && !expired && (
-                        <form action={revokeGrant} style={{ display: "inline" }}>
-                          <input type="hidden" name="id" value={g.id} />
-                          <input type="hidden" name="eventId" value={event.id} />
-                          <button
-                            type="submit"
-                            style={{ background: "none", border: "none", color: "#B02A37", cursor: "pointer", fontWeight: 700 }}
-                          >
-                            Revoke
-                          </button>
-                        </form>
-                      )}
-                      {(g.revoked || expired) && (
-                        <form action={deleteGrant} style={{ display: "inline" }}>
-                          <input type="hidden" name="id" value={g.id} />
-                          <input type="hidden" name="eventId" value={event.id} />
-                          <button
-                            type="submit"
-                            style={{ background: "none", border: "none", color: "#B02A37", cursor: "pointer", fontWeight: 700 }}
-                          >
-                            Delete
-                          </button>
-                        </form>
-                      )}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                        {!g.revoked && <ExtendControl grantId={g.id} eventId={event.id} />}
+                        {!g.revoked && !expired && (
+                          <form action={revokeGrant} style={{ display: "inline" }}>
+                            <input type="hidden" name="id" value={g.id} />
+                            <input type="hidden" name="eventId" value={event.id} />
+                            <button
+                              type="submit"
+                              style={{ background: "none", border: "none", color: "#B02A37", cursor: "pointer", fontWeight: 700 }}
+                            >
+                              Revoke
+                            </button>
+                          </form>
+                        )}
+                        {(g.revoked || expired) && (
+                          <form action={deleteGrant} style={{ display: "inline" }}>
+                            <input type="hidden" name="id" value={g.id} />
+                            <input type="hidden" name="eventId" value={event.id} />
+                            <button
+                              type="submit"
+                              style={{ background: "none", border: "none", color: "#B02A37", cursor: "pointer", fontWeight: 700 }}
+                            >
+                              Delete
+                            </button>
+                          </form>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

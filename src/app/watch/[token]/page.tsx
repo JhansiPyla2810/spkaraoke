@@ -34,6 +34,9 @@ export default async function WatchPage({
   const [grant] = await db.select().from(accessGrants).where(eq(accessGrants.token, token));
   if (!grant) return <ExpiredNotice message="This link isn't valid." />;
   if (grant.revoked) return <ExpiredNotice message="This link has been revoked." />;
+  if (grant.startsAt > Date.now()) {
+    return <ExpiredNotice message="This link isn't active yet. Please check back at the scheduled time." />;
+  }
   if (grant.expiresAt < Date.now()) {
     await cleanupGrantDriveAccess(grant);
     return <ExpiredNotice message="This link has expired." />;

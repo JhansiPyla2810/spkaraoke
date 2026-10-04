@@ -106,7 +106,7 @@ export default async function EventsPage({
             style={{ width: "100%" }}
           />
         </div>
-        <button className="btn btn-primary" type="submit">Add event</button>
+        <button className="btn btn-primary" type="submit">Create event folder</button>
       </form>
 
       <div className="songtable-wrap">
