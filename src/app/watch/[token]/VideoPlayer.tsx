@@ -92,7 +92,12 @@ export default function VideoPlayer({
   const [watermarkInset, setWatermarkInset] = useState({ top: 0, left: 0 });
   const [hoverRatio, setHoverRatio] = useState<number | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [loadProgress, setLoadProgress] = useState(0);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasAutoFullscreened = useRef(false);
 
   function showControls() {
     setControlsVisible(true);
@@ -172,37 +177,63 @@ export default function VideoPlayer({
     };
   }, [isFullscreen, duration]);
 
+  // Download the whole video into memory before it's playable, instead of
+  // streaming it live — so once it starts, a network drop mid-song (e.g.
+  // on stage) can't interrupt playback. Progress is shown to the viewer;
+  // the video stays paused until this finishes and they tap play.
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.play().catch(() => {
-      video.muted = true;
-      setMuted(true);
-      video.play().catch(() => {});
-    });
-    showControls();
+    setLoadProgress(0);
+    setLoadError(false);
+    setBlobUrl(null);
 
-    // On phones, open straight into fullscreen — no need to make the
-    // viewer tap fullscreen themselves after already tapping play. Only
-    // on phone-sized screens (checked via the shorter viewport edge, so
-    // it's correct in both portrait and landscape); leave desktop/tablet
-    // in the normal modal view.
-    const isPhoneSized = Math.min(window.innerWidth, window.innerHeight) <= 500;
-    if (isPhoneSized && containerRef.current) {
-      containerRef.current.requestFullscreen().catch(() => {});
-    }
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", streamUrl);
+    xhr.responseType = "blob";
+    xhr.onprogress = (e) => {
+      if (e.lengthComputable) setLoadProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        setBlobUrl(URL.createObjectURL(xhr.response));
+      } else {
+        setLoadError(true);
+      }
+    };
+    xhr.onerror = () => setLoadError(true);
+    xhr.send();
 
+    return () => xhr.abort();
+  }, [streamUrl, reloadKey]);
+
+  useEffect(() => {
+    return () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [blobUrl]);
+
+  useEffect(() => {
     return () => {
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function togglePlay() {
     const video = videoRef.current;
-    if (!video) return;
-    if (video.paused) video.play();
-    else video.pause();
+    if (!video || !blobUrl) return;
+    if (video.paused) {
+      video.play();
+      showControls();
+      // On phones, go straight to fullscreen the first time they hit play
+      // — no need for a second tap. Checked via the shorter viewport edge
+      // so it's correct in both portrait and landscape.
+      const isPhoneSized = Math.min(window.innerWidth, window.innerHeight) <= 500;
+      if (isPhoneSized && !hasAutoFullscreened.current && containerRef.current) {
+        hasAutoFullscreened.current = true;
+        containerRef.current.requestFullscreen().catch(() => {});
+      }
+    } else {
+      video.pause();
+    }
   }
 
   function toggleMute() {
@@ -289,7 +320,7 @@ export default function VideoPlayer({
       >
         <video
           ref={videoRef}
-          src={streamUrl}
+          src={blobUrl ?? undefined}
           playsInline
           style={{
             display: "block",
@@ -357,7 +388,76 @@ export default function VideoPlayer({
           <IconClose />
         </button>
 
-        {!playing && (
+        {loadError && (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              textAlign: "center",
+              color: "#fff",
+              zIndex: 2,
+            }}
+          >
+            <p style={{ marginBottom: 12, fontSize: ".9rem" }}>Couldn&apos;t load this video.</p>
+            <button
+              onClick={() => setReloadKey((k) => k + 1)}
+              className="btn btn-primary"
+              style={{ fontSize: ".85rem" }}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {!loadError && !blobUrl && (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 120,
+              textAlign: "center",
+              color: "#fff",
+              zIndex: 2,
+            }}
+          >
+            <div
+              style={{
+                position: "relative",
+                width: 72,
+                height: 72,
+                margin: "0 auto 12px",
+                borderRadius: "50%",
+                background: `conic-gradient(#fff ${loadProgress * 3.6}deg, rgba(255,255,255,.2) 0deg)`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: 58,
+                  height: 58,
+                  borderRadius: "50%",
+                  background: "rgba(10,13,18,.9)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: ".85rem",
+                  fontWeight: 700,
+                }}
+              >
+                {loadProgress}%
+              </div>
+            </div>
+            <p style={{ fontSize: ".8rem", color: "rgba(255,255,255,.8)" }}>Loading for offline playback...</p>
+          </div>
+        )}
+
+        {!loadError && blobUrl && !playing && (
           <button
             onClick={togglePlay}
             aria-label="Play"
@@ -400,7 +500,12 @@ export default function VideoPlayer({
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <button onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} style={iconButtonStyle(34)}>
+            <button
+              onClick={togglePlay}
+              disabled={!blobUrl}
+              aria-label={playing ? "Pause" : "Play"}
+              style={{ ...iconButtonStyle(34), opacity: blobUrl ? 1 : .4, cursor: blobUrl ? "pointer" : "default" }}
+            >
               {playing ? <IconPause /> : <IconPlay size={18} />}
             </button>
 
