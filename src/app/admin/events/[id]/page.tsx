@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { events, accessGrants, accessViews } from "@/lib/schema";
 import { getDriveConnectionStatus } from "@/lib/googleAuth";
 import { createGrant, revokeGrant, deleteGrant, lockdownEvent } from "../actions";
+import { cleanupGrantDriveAccess } from "@/lib/grantCleanup";
 import ExtendControl from "./ExtendControl";
 import ExpiryInput from "./ExpiryInput";
 import SubmitButton from "@/app/components/SubmitButton";
@@ -37,6 +38,18 @@ export default async function EventDetailPage({
     .from(accessGrants)
     .where(eq(accessGrants.eventId, eventId))
     .orderBy(desc(accessGrants.id));
+
+  // Best-effort safety net: visiting this page is far more frequent than
+  // the daily cron sweep, so clean up any expired grant's Drive access
+  // right here too instead of leaving it to wait for the cron or for
+  // someone to revisit the (now-expired) client link.
+  const now0 = Date.now();
+  for (const g of grants) {
+    if (g.expiresAt < now0 && g.drivePermissionId) {
+      await cleanupGrantDriveAccess(g);
+      g.drivePermissionId = null;
+    }
+  }
 
   const grantIds = grants.map((g) => g.id);
   const views = grantIds.length
