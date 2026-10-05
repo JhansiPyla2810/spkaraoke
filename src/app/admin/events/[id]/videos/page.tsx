@@ -6,7 +6,9 @@ import { db } from "@/lib/db";
 import { events } from "@/lib/schema";
 import { getDriveConnectionStatus, getAccessTokenFromRefreshToken } from "@/lib/googleAuth";
 import { listFolderFiles } from "@/lib/drive";
+import { lockdownEvent } from "../../actions";
 import VideoManager from "./VideoManager";
+import SubmitButton from "@/app/components/SubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +44,38 @@ export default async function EventVideosPage({ params }: { params: Promise<{ id
       <h1 style={{ fontFamily: "Archivo, sans-serif", fontSize: "1.5rem", marginBottom: 20 }}>
         Manage videos — {event.name}
       </h1>
+
+      {!event.lockedDownAt && (
+        <div
+          style={{
+            border: "1px solid #B02A37",
+            background: "color-mix(in srgb, #B02A37 8%, transparent)",
+            borderRadius: 10,
+            padding: "12px 16px",
+            marginBottom: 20,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 10,
+          }}
+        >
+          <span style={{ color: "#B02A37", fontWeight: 700, fontSize: ".88rem" }}>
+            ⚠ Videos here aren&apos;t locked down — adding or changing files means download
+            protection needs to be re-applied before sharing any client link.
+          </span>
+          <form action={lockdownEvent}>
+            <input type="hidden" name="eventId" value={event.id} />
+            <SubmitButton
+              className="btn btn-primary"
+              pendingLabel="Locking down..."
+              disabled={!connected}
+            >
+              Lock down videos
+            </SubmitButton>
+          </form>
+        </div>
+      )}
 
       {driveStatus === "expired" && (
         <p style={{ color: "#B02A37", fontWeight: 700, fontSize: ".85rem" }}>

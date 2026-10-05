@@ -15,9 +15,15 @@ function formatSize(bytes?: string) {
   return `${(mb / 1024).toFixed(2)} GB`;
 }
 
-function uploadWithProgress(uploadUrl: string, file: File, onProgress: (pct: number) => void) {
+function uploadWithProgress(
+  uploadUrl: string,
+  file: File,
+  onProgress: (pct: number) => void,
+  xhrRef: { current: XMLHttpRequest | null }
+) {
   return new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    xhrRef.current = xhr;
     xhr.open("PUT", uploadUrl);
     xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
     xhr.upload.onprogress = (e) => {
@@ -44,6 +50,7 @@ function UploadRow({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const startedRef = useRef(false);
+  const xhrRef = useRef<XMLHttpRequest | null>(null);
 
   useEffect(() => {
     if (startedRef.current) return;
@@ -52,7 +59,7 @@ function UploadRow({
     (async () => {
       try {
         const { uploadUrl } = await requestUploadSession(eventId, file.name, file.type || "video/mp4");
-        await uploadWithProgress(uploadUrl, file, setProgress);
+        await uploadWithProgress(uploadUrl, file, setProgress, xhrRef);
         await finishUpload(eventId);
       } catch (e) {
         // The file may well have reached Drive even if this request itself
@@ -65,6 +72,10 @@ function UploadRow({
         onDone();
       }
     })();
+
+    // If this row ever unmounts mid-upload, abort the in-flight request
+    // instead of leaving it running in the background unobserved.
+    return () => xhrRef.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -164,7 +175,7 @@ function FileRow({ file, eventId }: { file: FileItem; eventId: number }) {
 }
 
 export default function VideoManager({ eventId, files }: { eventId: number; files: FileItem[] }) {
-  const [uploading, setUploading] = useState<File[]>([]);
+  const [uploading, setUploading] = useState<{ id: string; file: File }[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -179,7 +190,13 @@ export default function VideoManager({ eventId, files }: { eventId: number; file
           style={{ display: "none" }}
           onChange={(e) => {
             const picked = Array.from(e.target.files ?? []);
-            if (picked.length) setUploading((prev) => [...prev, ...picked]);
+            if (picked.length) {
+              const withIds = picked.map((file) => ({
+                id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                file,
+              }));
+              setUploading((prev) => [...prev, ...withIds]);
+            }
             e.target.value = "";
           }}
         />
@@ -200,13 +217,13 @@ export default function VideoManager({ eventId, files }: { eventId: number; file
             gap: 8,
           }}
         >
-          {uploading.map((f, i) => (
+          {uploading.map((item) => (
             <UploadRow
-              key={`${f.name}-${i}`}
-              file={f}
+              key={item.id}
+              file={item.file}
               eventId={eventId}
               onDone={() => {
-                setUploading((prev) => prev.filter((x) => x !== f));
+                setUploading((prev) => prev.filter((x) => x.id !== item.id));
                 router.refresh();
               }}
             />
