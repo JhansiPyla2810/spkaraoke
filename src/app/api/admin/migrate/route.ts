@@ -59,5 +59,10 @@ export async function GET() {
   );
   results.push("access_views table ready");
 
+  const protect = await db.run(
+    sql.raw(`UPDATE events SET is_protected = 1 WHERE name = 'All Songs' AND is_protected = 0`)
+  );
+  results.push(`"All Songs" protection: ${protect.rowsAffected ?? 0} row(s) updated`);
+
   return NextResponse.json({ results });
 }
