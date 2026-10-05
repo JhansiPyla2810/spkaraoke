@@ -32,6 +32,14 @@ export async function GET() {
       "ALTER TABLE access_grants ADD COLUMN starts_at INTEGER NOT NULL DEFAULT 0",
       "starts_at column"
     ),
+    await addColumnIfMissing(
+      "ALTER TABLE events ADD COLUMN locked_down_at INTEGER",
+      "locked_down_at column"
+    ),
+    await addColumnIfMissing(
+      "ALTER TABLE access_grants ADD COLUMN active_device_id TEXT",
+      "active_device_id column"
+    ),
   ];
 
   await db.run(

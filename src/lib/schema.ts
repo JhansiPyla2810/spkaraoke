@@ -13,6 +13,10 @@ export const events = sqliteTable('events', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
   driveFolderId: text('drive_folder_id').notNull(),
+  // Set when "Lock down videos" last succeeded with zero failures. Cleared
+  // whenever a new video is uploaded, so newly-added, still-unlocked
+  // content can't slip out under an already-generated link's cover.
+  lockedDownAt: integer('locked_down_at'),
   createdAt: integer('created_at').notNull(),
 });
 
@@ -29,6 +33,12 @@ export const accessGrants = sqliteTable('access_grants', {
   // event's folder. Cleared once that Drive-level access has been revoked
   // (on manual revoke, on expiry cleanup, or via the daily cron sweep).
   drivePermissionId: text('drive_permission_id'),
+  // The one device currently allowed to use this link (a random ID stored
+  // in that device's cookie). A different device opening the link can take
+  // over, which replaces this value — the previous device then finds its
+  // own cookie no longer matches and is locked out. Admin test emails are
+  // exempt from this check entirely.
+  activeDeviceId: text('active_device_id'),
   createdAt: integer('created_at').notNull(),
 });
 

@@ -343,21 +343,24 @@ export default function VideoPlayer({
             textAlign: "left",
             color: "rgba(255,255,255,.95)",
             background: "rgba(0,0,0,.5)",
-            padding: "clamp(7px, 1.2vh, 9px) clamp(12px, 1.8vw, 14px)",
-            borderRadius: 6,
+            padding: "clamp(13px, 2.2vh, 18px) clamp(18px, 3vw, 24px)",
+            borderRadius: 8,
             pointerEvents: "none",
             zIndex: 2,
-            lineHeight: 1.35,
-            maxWidth: "70%",
+            lineHeight: 1.5,
+            maxWidth: "80%",
           }}
         >
-          <div style={{ fontSize: "clamp(.8rem, 1.8vh, .84rem)", fontWeight: 700 }}>
-            Temporary access for {clientName} &middot; expires {new Date(expiresAt).toLocaleString()}
+          <div style={{ fontSize: "clamp(1.3rem, 3.4vh, 1.7rem)", fontWeight: 700 }}>
+            Temporary access for {clientName}
           </div>
-          <div style={{ fontSize: "clamp(.64rem, 1.4vh, .66rem)", color: "rgba(255,255,255,.85)" }}>
+          <div style={{ fontSize: "clamp(1.3rem, 3.4vh, 1.7rem)", fontWeight: 700 }}>
+            expires {new Date(expiresAt).toLocaleString()}
+          </div>
+          <div style={{ fontSize: "clamp(1.05rem, 2.5vh, 1.3rem)", color: "rgba(255,255,255,.85)" }}>
             &copy; {now.getFullYear()} Satya Pyla Karaoke
           </div>
-          <div style={{ fontSize: "clamp(.58rem, 1.2vh, .6rem)", color: "rgba(255,255,255,.65)" }}>
+          <div style={{ fontSize: "clamp(.95rem, 2.1vh, 1.15rem)", color: "rgba(255,255,255,.65)" }}>
             {now.toLocaleString()}
           </div>
         </div>

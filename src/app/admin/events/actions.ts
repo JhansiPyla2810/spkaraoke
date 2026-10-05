@@ -61,6 +61,7 @@ export async function createGrant(formData: FormData) {
 
   const [event] = await db.select().from(events).where(eq(events.id, eventId));
   if (!event) return;
+  if (!event.lockedDownAt) redirect(`/admin/events/${eventId}?grant_error=not_locked`);
 
   let permissionId: string;
   try {
@@ -153,6 +154,11 @@ export async function lockdownEvent(formData: FormData) {
   try {
     const accessToken = await getAccessTokenFromRefreshToken();
     const result = await lockdownFolderVideos(event.driveFolderId, accessToken);
+    if (result.failed === 0) {
+      await db.update(events).set({ lockedDownAt: Date.now() }).where(eq(events.id, eventId));
+    } else {
+      await db.update(events).set({ lockedDownAt: null }).where(eq(events.id, eventId));
+    }
     const errorParam = result.firstError ? `&error_detail=${encodeURIComponent(result.firstError)}` : "";
     redirectUrl = `/admin/events/${eventId}?locked=${result.newlyLocked}&already=${result.alreadyLocked}&failed=${result.failed}&total=${result.total}${errorParam}`;
   } catch (e) {

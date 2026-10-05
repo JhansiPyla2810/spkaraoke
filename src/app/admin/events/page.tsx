@@ -7,6 +7,7 @@ import { events } from "@/lib/schema";
 import { isGoogleConnected } from "@/lib/googleAuth";
 import { createEvent, deleteEvent } from "./actions";
 import { logout } from "../actions";
+import SubmitButton from "@/app/components/SubmitButton";
 
 export default async function EventsPage({
   searchParams,
@@ -28,7 +29,7 @@ export default async function EventsPage({
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link className="btn btn-ghost" href="/admin/dashboard">Manage songs</Link>
           <form action={logout}>
-            <button className="btn btn-ghost" type="submit">Log out</button>
+            <SubmitButton className="btn btn-ghost" pendingLabel="Logging out...">Log out</SubmitButton>
           </form>
         </div>
       </div>
@@ -106,7 +107,7 @@ export default async function EventsPage({
             style={{ width: "100%" }}
           />
         </div>
-        <button className="btn btn-primary" type="submit">Create event folder</button>
+        <SubmitButton className="btn btn-primary" pendingLabel="Creating...">Create event folder</SubmitButton>
       </form>
 
       <div className="songtable-wrap">
@@ -146,12 +147,12 @@ export default async function EventsPage({
                   <td>
                     <form action={deleteEvent}>
                       <input type="hidden" name="id" value={e.id} />
-                      <button
-                        type="submit"
+                      <SubmitButton
+                        pendingLabel="Deleting..."
                         style={{ background: "none", border: "none", color: "#B02A37", cursor: "pointer", fontWeight: 700 }}
                       >
                         Delete
-                      </button>
+                      </SubmitButton>
                     </form>
                   </td>
                 </tr>

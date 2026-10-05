@@ -5,6 +5,7 @@ import { isAuthed } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { songs } from "@/lib/schema";
 import { addSong, deleteSong, logout } from "../actions";
+import SubmitButton from "@/app/components/SubmitButton";
 
 export default async function DashboardPage() {
   if (!(await isAuthed())) redirect("/admin");
@@ -20,7 +21,7 @@ export default async function DashboardPage() {
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link className="btn btn-ghost" href="/admin/events">Event access →</Link>
           <form action={logout}>
-            <button className="btn btn-ghost" type="submit">Log out</button>
+            <SubmitButton className="btn btn-ghost" pendingLabel="Logging out...">Log out</SubmitButton>
           </form>
         </div>
       </div>
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
           <input id="hero" name="hero" style={{ width: "100%" }} />
         </div>
         <input type="hidden" name="language" value="Telugu" />
-        <button className="btn btn-primary" type="submit">Add song</button>
+        <SubmitButton className="btn btn-primary" pendingLabel="Adding...">Add song</SubmitButton>
       </form>
 
       <div className="songtable-wrap">
@@ -64,12 +65,12 @@ export default async function DashboardPage() {
                 <td>
                   <form action={deleteSong}>
                     <input type="hidden" name="id" value={s.id} />
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingLabel="Deleting..."
                       style={{ background: "none", border: "none", color: "#B02A37", cursor: "pointer", fontWeight: 700 }}
                     >
                       Delete
-                    </button>
+                    </SubmitButton>
                   </form>
                 </td>
               </tr>

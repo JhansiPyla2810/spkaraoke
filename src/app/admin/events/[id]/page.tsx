@@ -10,6 +10,7 @@ import { createGrant, revokeGrant, deleteGrant, lockdownEvent } from "../actions
 import ExtendControl from "./ExtendControl";
 import ExpiryInput from "./ExpiryInput";
 import SubmitButton from "@/app/components/SubmitButton";
+import NavLink from "@/app/components/NavLink";
 import LocalTime from "@/app/components/LocalTime";
 
 export default async function EventDetailPage({
@@ -65,17 +66,29 @@ export default async function EventDetailPage({
           {event.name}
         </h1>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link href={`/admin/events/${event.id}/videos`} className="btn btn-ghost">
+          <NavLink href={`/admin/events/${event.id}/videos`} className="btn btn-ghost" pendingLabel="Opening...">
             Manage videos
-          </Link>
+          </NavLink>
           <form action={lockdownEvent}>
             <input type="hidden" name="eventId" value={event.id} />
-            <button className="btn btn-ghost" type="submit" disabled={!connected}>
+            <SubmitButton className="btn btn-ghost" disabled={!connected} pendingLabel="Locking down...">
               Lock down videos
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </div>
+
+      <p style={{ fontSize: ".85rem", marginBottom: 20 }}>
+        {event.lockedDownAt ? (
+          <span style={{ color: "var(--good)", fontWeight: 700 }}>
+            ✓ Locked down <LocalTime ms={event.lockedDownAt} />
+          </span>
+        ) : (
+          <span style={{ color: "#B02A37", fontWeight: 700 }}>
+            ⚠ Not locked down yet — client links can&apos;t be generated until this succeeds.
+          </span>
+        )}
+      </p>
 
       {!connected && (
         <p style={{ color: "var(--muted)", fontSize: ".85rem", marginBottom: 20 }}>
@@ -111,7 +124,13 @@ export default async function EventDetailPage({
           Access must start before it ends &mdash; check the start/end times.
         </p>
       )}
-      {sp.grant_error && sp.grant_error !== "past" && sp.grant_error !== "range" && (
+      {sp.grant_error === "not_locked" && (
+        <p style={{ color: "#B02A37", fontWeight: 600, fontSize: ".9rem", marginBottom: 20 }}>
+          Run &quot;Lock down videos&quot; successfully (zero failures) before generating any client
+          links for this event.
+        </p>
+      )}
+      {sp.grant_error && !["past", "range", "not_locked"].includes(sp.grant_error) && (
         <p style={{ color: "#B02A37", fontWeight: 600, fontSize: ".9rem", marginBottom: 20 }}>
           Couldn&apos;t grant that email access to the Drive folder. Check the email and that Google
           Drive is connected, then try again.
@@ -127,14 +146,26 @@ export default async function EventDetailPage({
         <input type="hidden" name="expiresAtMs" />
         <div className="form-row" style={{ marginBottom: 0, flex: "1 1 160px" }}>
           <label htmlFor="clientName">Client name</label>
-          <input id="clientName" name="clientName" required style={{ width: "100%" }} />
+          <input id="clientName" name="clientName" required disabled={!event.lockedDownAt} style={{ width: "100%" }} />
         </div>
         <div className="form-row" style={{ marginBottom: 0, flex: "1.3 1 200px" }}>
           <label htmlFor="clientEmail">Client&apos;s Google email</label>
-          <input id="clientEmail" name="clientEmail" type="email" required style={{ width: "100%" }} />
+          <input
+            id="clientEmail"
+            name="clientEmail"
+            type="email"
+            required
+            disabled={!event.lockedDownAt}
+            style={{ width: "100%" }}
+          />
         </div>
-        <ExpiryInput />
-        <SubmitButton className="btn btn-primary" pendingLabel="Generating...">
+        <ExpiryInput disabled={!event.lockedDownAt} />
+        <SubmitButton
+          className="btn btn-primary"
+          pendingLabel="Generating..."
+          disabled={!event.lockedDownAt}
+          title={!event.lockedDownAt ? "Lock down videos first" : undefined}
+        >
           Generate event link
         </SubmitButton>
       </form>
@@ -245,24 +276,24 @@ export default async function EventDetailPage({
                           <form action={revokeGrant} style={{ display: "inline" }}>
                             <input type="hidden" name="id" value={g.id} />
                             <input type="hidden" name="eventId" value={event.id} />
-                            <button
-                              type="submit"
+                            <SubmitButton
+                              pendingLabel="Revoking..."
                               style={{ background: "none", border: "none", color: "#B02A37", cursor: "pointer", fontWeight: 700 }}
                             >
                               Revoke
-                            </button>
+                            </SubmitButton>
                           </form>
                         )}
                         {(g.revoked || expired) && (
                           <form action={deleteGrant} style={{ display: "inline" }}>
                             <input type="hidden" name="id" value={g.id} />
                             <input type="hidden" name="eventId" value={event.id} />
-                            <button
-                              type="submit"
+                            <SubmitButton
+                              pendingLabel="Deleting..."
                               style={{ background: "none", border: "none", color: "#B02A37", cursor: "pointer", fontWeight: 700 }}
                             >
                               Delete
-                            </button>
+                            </SubmitButton>
                           </form>
                         )}
                       </div>

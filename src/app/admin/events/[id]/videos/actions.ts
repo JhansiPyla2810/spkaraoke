@@ -17,6 +17,10 @@ export async function requestUploadSession(eventId: number, fileName: string, mi
   const folderId = await getFolderId(eventId);
   const accessToken = await getAccessTokenFromRefreshToken();
   const uploadUrl = await createResumableUploadSession(folderId, fileName, mimeType, accessToken);
+  // Clear as soon as an upload starts (not only once it's confirmed done) —
+  // a client-side "upload failed" can still have actually reached Drive, so
+  // err toward requiring a fresh lockdown rather than risking a missed one.
+  await db.update(events).set({ lockedDownAt: null }).where(eq(events.id, eventId));
   return { uploadUrl };
 }
 

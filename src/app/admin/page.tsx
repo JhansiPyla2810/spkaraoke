@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { isAuthed } from "@/lib/auth";
 import { login } from "./actions";
+import SubmitButton from "@/app/components/SubmitButton";
 
 export default async function AdminLoginPage({
   searchParams,
@@ -21,7 +22,7 @@ export default async function AdminLoginPage({
           <input id="password" name="password" type="password" required autoFocus />
         </div>
         {error && <p style={{ color: "#B02A37", fontSize: ".88rem" }}>Wrong password.</p>}
-        <button className="btn btn-primary" type="submit">Log in</button>
+        <SubmitButton className="btn btn-primary" pendingLabel="Logging in...">Log in</SubmitButton>
       </form>
     </div>
   );

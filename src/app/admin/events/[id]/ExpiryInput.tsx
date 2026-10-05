@@ -15,7 +15,7 @@ function setHidden(form: HTMLFormElement | null, name: string, value: string) {
   hidden.value = Number.isNaN(ms) ? "" : String(ms);
 }
 
-export default function ExpiryInput() {
+export default function ExpiryInput({ disabled }: { disabled?: boolean }) {
   const [min] = useState(() => localValue(new Date()));
 
   return (
@@ -27,6 +27,7 @@ export default function ExpiryInput() {
           type="datetime-local"
           min={min}
           defaultValue={min}
+          disabled={disabled}
           style={{ width: "100%" }}
           onChange={(e) => setHidden(e.currentTarget.form, "startsAtMs", e.currentTarget.value)}
           onBlur={(e) => setHidden(e.currentTarget.form, "startsAtMs", e.currentTarget.value)}
@@ -39,6 +40,7 @@ export default function ExpiryInput() {
           type="datetime-local"
           min={min}
           required
+          disabled={disabled}
           style={{ width: "100%" }}
           onChange={(e) => setHidden(e.currentTarget.form, "expiresAtMs", e.currentTarget.value)}
         />

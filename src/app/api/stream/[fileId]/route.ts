@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accessGrants, events } from "@/lib/schema";
 import { getAccessTokenFromRefreshToken } from "@/lib/googleAuth";
+import { deviceCookieName, getDeviceStatus } from "@/lib/deviceSession";
 
 // Node runtime (not Edge) — Edge is incompatible with the local dev SQLite
 // file database. Extend the duration since a full (non-ranged) request for
@@ -25,6 +26,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const [event] = await db.select().from(events).where(eq(events.id, grant.eventId));
   if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const cookieDeviceId = request.cookies.get(deviceCookieName(token))?.value;
+  const deviceStatus = getDeviceStatus(grant.clientEmail, grant.activeDeviceId, cookieDeviceId);
+  if (deviceStatus === "foreign-new" || deviceStatus === "kicked") {
+    return NextResponse.json({ error: "This link is active on another device" }, { status: 403 });
+  }
 
   let accessToken: string;
   try {
