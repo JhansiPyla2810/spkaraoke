@@ -40,6 +40,10 @@ export async function GET() {
       "ALTER TABLE access_grants ADD COLUMN active_device_id TEXT",
       "active_device_id column"
     ),
+    await addColumnIfMissing(
+      "ALTER TABLE events ADD COLUMN is_protected INTEGER NOT NULL DEFAULT 0",
+      "is_protected column"
+    ),
   ];
 
   await db.run(
