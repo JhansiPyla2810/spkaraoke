@@ -38,6 +38,9 @@ export async function deleteEvent(formData: FormData) {
   const id = Number(formData.get("id"));
   if (!id) return;
 
+  const [event] = await db.select().from(events).where(eq(events.id, id));
+  if (!event || event.isProtected) return;
+
   const grants = await db.select().from(accessGrants).where(eq(accessGrants.eventId, id));
   for (const grant of grants) {
     await cleanupGrantDriveAccess(grant);

@@ -4,7 +4,7 @@ import { desc } from "drizzle-orm";
 import { isAuthed } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { events } from "@/lib/schema";
-import { isGoogleConnected } from "@/lib/googleAuth";
+import { getDriveConnectionStatus } from "@/lib/googleAuth";
 import { createEvent, deleteEvent } from "./actions";
 import { logout } from "../actions";
 import SubmitButton from "@/app/components/SubmitButton";
@@ -17,7 +17,8 @@ export default async function EventsPage({
   if (!(await isAuthed())) redirect("/admin");
 
   const allEvents = await db.select().from(events).orderBy(desc(events.id));
-  const connected = await isGoogleConnected();
+  const driveStatus = await getDriveConnectionStatus();
+  const connected = driveStatus === "ok";
   const { google_connected, google_error, create_error } = await searchParams;
 
   return (
@@ -69,15 +70,17 @@ export default async function EventsPage({
           gap: 10,
         }}
       >
-        <span style={{ fontSize: ".9rem" }}>
-          {connected ? (
-            <>✓ Google Drive is connected for bulk video lockdown.</>
-          ) : (
+        <span style={{ fontSize: ".9rem", color: driveStatus === "expired" ? "#B02A37" : undefined, fontWeight: driveStatus === "expired" ? 700 : undefined }}>
+          {driveStatus === "ok" && <>✓ Google Drive is connected for bulk video lockdown.</>}
+          {driveStatus === "expired" && (
+            <>⚠ Google Drive connection has expired — reconnect to restore lockdown/upload/links.</>
+          )}
+          {driveStatus === "none" && (
             <>Connect Google Drive to enable one-click &quot;Lock down videos&quot; per event.</>
           )}
         </span>
         <a className="btn btn-ghost" href="/api/google/oauth/start">
-          {connected ? "Reconnect" : "Connect Google Drive"}
+          {driveStatus === "none" ? "Connect Google Drive" : "Reconnect"}
         </a>
       </div>
 
@@ -145,15 +148,23 @@ export default async function EventsPage({
                     </a>
                   </td>
                   <td>
-                    <form action={deleteEvent}>
-                      <input type="hidden" name="id" value={e.id} />
-                      <SubmitButton
-                        pendingLabel="Deleting..."
-                        style={{ background: "none", border: "none", color: "#B02A37", cursor: "pointer", fontWeight: 700 }}
-                      >
-                        Delete
-                      </SubmitButton>
-                    </form>
+                    <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                      {e.isProtected ? (
+                        <span style={{ color: "var(--accent-warm)", fontWeight: 700, fontSize: ".85rem" }}>
+                          🔒 Protected
+                        </span>
+                      ) : (
+                        <form action={deleteEvent}>
+                          <input type="hidden" name="id" value={e.id} />
+                          <SubmitButton
+                            pendingLabel="Deleting..."
+                            style={{ background: "none", border: "none", color: "#B02A37", cursor: "pointer", fontWeight: 700 }}
+                          >
+                            Delete
+                          </SubmitButton>
+                        </form>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

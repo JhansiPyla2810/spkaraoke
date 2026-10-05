@@ -5,13 +5,14 @@ import { eq, desc, inArray } from "drizzle-orm";
 import { isAuthed } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { events, accessGrants, accessViews } from "@/lib/schema";
-import { isGoogleConnected } from "@/lib/googleAuth";
+import { getDriveConnectionStatus } from "@/lib/googleAuth";
 import { createGrant, revokeGrant, deleteGrant, lockdownEvent } from "../actions";
 import ExtendControl from "./ExtendControl";
 import ExpiryInput from "./ExpiryInput";
 import SubmitButton from "@/app/components/SubmitButton";
 import NavLink from "@/app/components/NavLink";
 import LocalTime from "@/app/components/LocalTime";
+import CopyLinkButton from "@/app/components/CopyLinkButton";
 
 export default async function EventDetailPage({
   params,
@@ -27,7 +28,8 @@ export default async function EventDetailPage({
   const [event] = await db.select().from(events).where(eq(events.id, eventId));
   if (!event) notFound();
 
-  const connected = await isGoogleConnected();
+  const driveStatus = await getDriveConnectionStatus();
+  const connected = driveStatus === "ok";
   const sp = await searchParams;
 
   const grants = await db
@@ -90,7 +92,16 @@ export default async function EventDetailPage({
         )}
       </p>
 
-      {!connected && (
+      {driveStatus === "expired" && (
+        <p style={{ color: "#B02A37", fontWeight: 700, fontSize: ".85rem", marginBottom: 20 }}>
+          ⚠ Google Drive connection has expired —{" "}
+          <Link href="/admin/events" style={{ color: "#B02A37", textDecoration: "underline" }}>
+            reconnect it
+          </Link>{" "}
+          before continuing.
+        </p>
+      )}
+      {driveStatus === "none" && (
         <p style={{ color: "var(--muted)", fontSize: ".85rem", marginBottom: 20 }}>
           <Link href="/admin/events" style={{ color: "var(--accent)", fontWeight: 700 }}>
             Connect Google Drive
@@ -213,37 +224,40 @@ export default async function EventDetailPage({
                   <tr key={g.id}>
                     <td>{g.clientName}</td>
                     <td style={{ fontSize: ".82rem", color: "var(--muted)" }}>{g.clientEmail}</td>
-                    <td style={{ fontSize: ".8rem", maxWidth: 160 }}>
-                      {status === "Active" ? (
-                        <a
-                          href={link}
-                          target="_blank"
-                          rel="noopener"
-                          title={link}
-                          style={{
-                            color: "var(--accent)",
-                            display: "block",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          /watch/{g.token}
-                        </a>
-                      ) : (
-                        <span
-                          title={link}
-                          style={{
-                            color: "var(--muted)",
-                            display: "block",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          /watch/{g.token}
-                        </span>
-                      )}
+                    <td style={{ fontSize: ".8rem", maxWidth: 190 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {status === "Active" ? (
+                          <a
+                            href={link}
+                            target="_blank"
+                            rel="noopener"
+                            title={link}
+                            style={{
+                              color: "var(--accent)",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              minWidth: 0,
+                            }}
+                          >
+                            /watch/{g.token}
+                          </a>
+                        ) : (
+                          <span
+                            title={link}
+                            style={{
+                              color: "var(--muted)",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              minWidth: 0,
+                            }}
+                          >
+                            /watch/{g.token}
+                          </span>
+                        )}
+                        <CopyLinkButton link={link} />
+                      </div>
                     </td>
                     <td style={{ fontSize: ".82rem", color: "var(--muted)" }}>
                       <LocalTime ms={g.startsAt} />

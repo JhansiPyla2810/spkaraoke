@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accessGrants, events } from "@/lib/schema";
@@ -6,10 +5,8 @@ import { listVideosWithAccessToken } from "@/lib/drive";
 import { getAccessTokenFromRefreshToken } from "@/lib/googleAuth";
 import { cleanupGrantDriveAccess } from "@/lib/grantCleanup";
 import { logAccessView } from "@/lib/accessViews";
-import { deviceCookieName, getDeviceStatus } from "@/lib/deviceSession";
 import VideoGallery from "./VideoGallery";
 import AutoExpireWatcher from "./AutoExpireWatcher";
-import DeviceGate from "./DeviceGate";
 import LocalTime from "@/app/components/LocalTime";
 
 export const dynamic = "force-dynamic";
@@ -48,12 +45,15 @@ export default async function WatchPage({
   const [event] = await db.select().from(events).where(eq(events.id, grant.eventId));
   if (!event) return <ExpiredNotice message="This link isn't valid." />;
 
-  const cookieStore = await cookies();
-  const cookieDeviceId = cookieStore.get(deviceCookieName(token))?.value;
-  const deviceStatus = getDeviceStatus(grant.clientEmail, grant.activeDeviceId, cookieDeviceId);
-  if (deviceStatus !== "match" && deviceStatus !== "exempt") {
-    return <DeviceGate token={token} status={deviceStatus} />;
-  }
+  // Single-device lock temporarily disabled (untested, reverted so it
+  // can't risk blocking a real client before a live session) — re-enable
+  // by restoring the status check below once it's been tested.
+  // const cookieStore = await cookies();
+  // const cookieDeviceId = cookieStore.get(deviceCookieName(token))?.value;
+  // const deviceStatus = getDeviceStatus(grant.clientEmail, grant.activeDeviceId, cookieDeviceId);
+  // if (deviceStatus !== "match" && deviceStatus !== "exempt") {
+  //   return <DeviceGate token={token} status={deviceStatus} />;
+  // }
 
   try {
     await logAccessView(grant.id);

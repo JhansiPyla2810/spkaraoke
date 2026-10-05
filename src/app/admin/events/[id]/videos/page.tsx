@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { isAuthed } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { events } from "@/lib/schema";
-import { isGoogleConnected, getAccessTokenFromRefreshToken } from "@/lib/googleAuth";
+import { getDriveConnectionStatus, getAccessTokenFromRefreshToken } from "@/lib/googleAuth";
 import { listFolderFiles } from "@/lib/drive";
 import VideoManager from "./VideoManager";
 
@@ -18,7 +18,8 @@ export default async function EventVideosPage({ params }: { params: Promise<{ id
   const [event] = await db.select().from(events).where(eq(events.id, eventId));
   if (!event) notFound();
 
-  const connected = await isGoogleConnected();
+  const driveStatus = await getDriveConnectionStatus();
+  const connected = driveStatus === "ok";
 
   let files: { id: string; name: string; mimeType: string; size?: string }[] = [];
   let loadError = false;
@@ -42,7 +43,16 @@ export default async function EventVideosPage({ params }: { params: Promise<{ id
         Manage videos — {event.name}
       </h1>
 
-      {!connected && (
+      {driveStatus === "expired" && (
+        <p style={{ color: "#B02A37", fontWeight: 700, fontSize: ".85rem" }}>
+          ⚠ Google Drive connection has expired —{" "}
+          <Link href="/admin/events" style={{ color: "#B02A37", textDecoration: "underline" }}>
+            reconnect it
+          </Link>{" "}
+          before continuing.
+        </p>
+      )}
+      {driveStatus === "none" && (
         <p style={{ color: "var(--muted)", fontSize: ".85rem" }}>
           <Link href="/admin/events" style={{ color: "var(--accent)", fontWeight: 700 }}>
             Connect Google Drive

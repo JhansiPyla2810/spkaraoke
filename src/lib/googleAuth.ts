@@ -61,6 +61,29 @@ export async function isGoogleConnected(): Promise<boolean> {
   return (await getStoredRefreshToken()) !== null;
 }
 
+export type DriveConnectionStatus = "none" | "ok" | "expired";
+
+// Unlike isGoogleConnected (which only checks a token is saved),  this
+// actually tries to use it — so a revoked/expired refresh token (the
+// "invalid_grant" failure mode we've hit before) shows up as "expired"
+// here instead of silently looking fine until some action fails later.
+export async function getDriveConnectionStatus(): Promise<DriveConnectionStatus> {
+  const refreshToken = await getStoredRefreshToken();
+  if (!refreshToken) return "none";
+
+  const res = await fetch(TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: getOAuthClientId(),
+      client_secret: getOAuthClientSecret(),
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+  return res.ok ? "ok" : "expired";
+}
+
 export async function getAccessTokenFromRefreshToken(): Promise<string> {
   const refreshToken = await getStoredRefreshToken();
   if (!refreshToken) throw new Error("Google Drive isn't connected yet");

@@ -17,6 +17,10 @@ export const events = sqliteTable('events', {
   // whenever a new video is uploaded, so newly-added, still-unlocked
   // content can't slip out under an already-generated link's cover.
   lockedDownAt: integer('locked_down_at'),
+  // When true, "Delete" is blocked for this event regardless of who's
+  // logged in (there's only one shared admin password, so this protects
+  // a folder itself rather than restricting a specific person).
+  isProtected: integer('is_protected', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at').notNull(),
 });
 
