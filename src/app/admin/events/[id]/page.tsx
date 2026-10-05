@@ -17,7 +17,7 @@ export default async function EventDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ locked?: string; already?: string; failed?: string; total?: string; lockdown_error?: string; grant_error?: string }>;
+  searchParams: Promise<{ locked?: string; already?: string; failed?: string; total?: string; lockdown_error?: string; error_detail?: string; grant_error?: string }>;
 }) {
   if (!(await isAuthed())) redirect("/admin");
 
@@ -86,9 +86,14 @@ export default async function EventDetailPage({
         </p>
       )}
       {sp.total && (
-        <p style={{ color: "var(--good)", fontWeight: 600, fontSize: ".9rem", marginBottom: 20 }}>
+        <p style={{ color: "var(--good)", fontWeight: 600, fontSize: ".9rem", marginBottom: Number(sp.failed) > 0 ? 6 : 20 }}>
           Checked {sp.total} video{sp.total === "1" ? "" : "s"}: {sp.locked} newly locked,{" "}
           {sp.already} already locked{Number(sp.failed) > 0 ? `, ${sp.failed} failed` : ""}.
+        </p>
+      )}
+      {sp.error_detail && (
+        <p style={{ color: "#B02A37", fontSize: ".82rem", marginBottom: 20, fontFamily: "monospace" }}>
+          {sp.error_detail}
         </p>
       )}
       {sp.lockdown_error && (

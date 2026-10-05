@@ -151,6 +151,7 @@ export type LockdownResult = {
   alreadyLocked: number;
   newlyLocked: number;
   failed: number;
+  firstError?: string;
 };
 
 // Applies Drive's "viewers/commenters can't download, print, or copy"
@@ -180,6 +181,9 @@ export async function lockdownFolderVideos(folderId: string, accessToken: string
       result.newlyLocked++;
     } else {
       result.failed++;
+      const body = await res.text();
+      console.error(`Lockdown failed for file ${file.id} (${res.status}): ${body}`);
+      if (!result.firstError) result.firstError = `(${res.status}) ${body.slice(0, 300)}`;
     }
   }
 

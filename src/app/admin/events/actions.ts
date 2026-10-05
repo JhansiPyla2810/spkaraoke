@@ -153,7 +153,8 @@ export async function lockdownEvent(formData: FormData) {
   try {
     const accessToken = await getAccessTokenFromRefreshToken();
     const result = await lockdownFolderVideos(event.driveFolderId, accessToken);
-    redirectUrl = `/admin/events/${eventId}?locked=${result.newlyLocked}&already=${result.alreadyLocked}&failed=${result.failed}&total=${result.total}`;
+    const errorParam = result.firstError ? `&error_detail=${encodeURIComponent(result.firstError)}` : "";
+    redirectUrl = `/admin/events/${eventId}?locked=${result.newlyLocked}&already=${result.alreadyLocked}&failed=${result.failed}&total=${result.total}${errorParam}`;
   } catch (e) {
     console.error(e);
     redirectUrl = `/admin/events/${eventId}?lockdown_error=1`;
