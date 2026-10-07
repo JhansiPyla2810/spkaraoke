@@ -44,6 +44,14 @@ export async function GET() {
       "ALTER TABLE events ADD COLUMN is_protected INTEGER NOT NULL DEFAULT 0",
       "is_protected column"
     ),
+    await addColumnIfMissing(
+      "ALTER TABLE access_grants ADD COLUMN active_tab_id TEXT",
+      "active_tab_id column"
+    ),
+    await addColumnIfMissing(
+      "ALTER TABLE access_grants ADD COLUMN pin TEXT NOT NULL DEFAULT ''",
+      "pin column"
+    ),
   ];
 
   await db.run(

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { events, accessGrants } from "@/lib/schema";
-import { lockdownFolderVideos, grantFolderAccess, createEventFolder, extractDriveFolderId } from "@/lib/drive";
+import { lockdownFolderVideos, createEventFolder, extractDriveFolderId } from "@/lib/drive";
 import { generateAccessToken } from "@/lib/access";
 import { getAccessTokenFromRefreshToken } from "@/lib/googleAuth";
 import { cleanupGrantDriveAccess } from "@/lib/grantCleanup";
@@ -66,15 +66,13 @@ export async function createGrant(formData: FormData) {
   if (!event) return;
   if (!event.lockedDownAt) redirect(`/admin/events/${eventId}?grant_error=not_locked`);
 
-  let permissionId: string;
-  try {
-    const accessToken = await getAccessTokenFromRefreshToken();
-    permissionId = await grantFolderAccess(event.driveFolderId, clientEmail, accessToken);
-  } catch (e) {
-    console.error(e);
-    redirect(`/admin/events/${eventId}?grant_error=1`);
-  }
-
+  // No Drive-level sharing with the client's email anymore — playback goes
+  // entirely through our own token+PIN+session-locked stream route, which
+  // always fetches as the admin, so granting the client Drive access never
+  // actually gated anything and only opened a direct-Drive-access window
+  // we don't want. grantFolderAccess/revokeFolderAccess (@/lib/drive) and
+  // cleanupGrantDriveAccess (@/lib/grantCleanup) are kept as unused
+  // utilities in case a future feature needs them again.
   const token = generateAccessToken();
   await db.insert(accessGrants).values({
     token,
@@ -84,7 +82,6 @@ export async function createGrant(formData: FormData) {
     startsAt,
     expiresAt,
     revoked: false,
-    drivePermissionId: permissionId,
     createdAt: Date.now(),
   });
   revalidatePath(`/admin/events/${eventId}`);
@@ -101,23 +98,9 @@ export async function extendGrant(formData: FormData) {
 
   const newExpiresAt = Math.max(grant.expiresAt, Date.now()) + minutes * 60_000;
 
-  let permissionId = grant.drivePermissionId;
-  if (!permissionId) {
-    // Already expired and its Drive access was cleaned up — re-grant it.
-    const [event] = await db.select().from(events).where(eq(events.id, grant.eventId));
-    if (!event) return;
-    try {
-      const accessToken = await getAccessTokenFromRefreshToken();
-      permissionId = await grantFolderAccess(event.driveFolderId, grant.clientEmail, accessToken);
-    } catch (e) {
-      console.error(e);
-      redirect(`/admin/events/${eventId}?grant_error=1`);
-    }
-  }
-
   await db
     .update(accessGrants)
-    .set({ expiresAt: newExpiresAt, drivePermissionId: permissionId })
+    .set({ expiresAt: newExpiresAt })
     .where(eq(accessGrants.id, id));
   revalidatePath(`/admin/events/${eventId}`);
 }

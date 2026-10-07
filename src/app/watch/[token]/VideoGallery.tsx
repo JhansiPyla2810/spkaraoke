@@ -90,6 +90,8 @@ function VideoCard({ video, onOpen }: { video: Video; onOpen: (v: Video) => void
   );
 }
 
+const PAGE_SIZE = 32;
+
 export default function VideoGallery({
   videos,
   clientName,
@@ -103,12 +105,19 @@ export default function VideoGallery({
 }) {
   const [query, setQuery] = useState("");
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
+  // Search always runs over the full catalog, not just what's currently
+  // rendered — pagination below only limits how many of these *matching*
+  // results get turned into DOM cards at once, so a 6000-video catalog
+  // doesn't make the page itself sluggish to load/scroll.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return videos;
     return videos.filter((v) => v.name.toLowerCase().includes(q));
   }, [videos, query]);
+
+  const visible = filtered.slice(0, visibleCount);
 
   return (
     <div>
@@ -116,7 +125,10 @@ export default function VideoGallery({
         <input
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setVisibleCount(PAGE_SIZE);
+          }}
           placeholder={`Search ${videos.length} video${videos.length === 1 ? "" : "s"}...`}
           style={{
             width: "100%",
@@ -140,22 +152,36 @@ export default function VideoGallery({
       {filtered.length === 0 ? (
         <p style={{ color: "var(--muted)" }}>No videos match &quot;{query}&quot;.</p>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))",
-            gap: 20,
-          }}
-        >
-          {filtered.map((v) => (
-            <VideoCard key={v.id} video={v} onOpen={setActiveVideo} />
-          ))}
-        </div>
+        <>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))",
+              gap: 20,
+            }}
+          >
+            {visible.map((v) => (
+              <VideoCard key={v.id} video={v} onOpen={setActiveVideo} />
+            ))}
+          </div>
+          {visibleCount < filtered.length && (
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+              <button
+                className="btn btn-ghost"
+                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+              >
+                Load more ({filtered.length - visibleCount} remaining)
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {activeVideo && (
         <VideoPlayer
-          streamUrl={`/api/stream/${activeVideo.id}?token=${grantToken}`}
+          streamUrl={`/api/stream/${activeVideo.id}?token=${grantToken}&tab=${encodeURIComponent(
+            sessionStorage.getItem(`wtab_${grantToken}`) ?? ""
+          )}`}
           title={activeVideo.name}
           clientName={clientName}
           expiresAt={expiresAt}

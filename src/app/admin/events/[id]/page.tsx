@@ -15,6 +15,12 @@ import NavLink from "@/app/components/NavLink";
 import LocalTime from "@/app/components/LocalTime";
 import CopyLinkButton from "@/app/components/CopyLinkButton";
 
+// Locking down a folder with thousands of videos can take a while even
+// parallelized — raise this route's function timeout ceiling well above
+// the default so the "Lock down videos" action has room to finish (the
+// host clamps it down automatically if the plan caps it lower).
+export const maxDuration = 300;
+
 export default async function EventDetailPage({
   params,
   searchParams,

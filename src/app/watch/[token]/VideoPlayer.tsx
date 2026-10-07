@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SESSION_LOCKED_EVENT } from "./SessionGate";
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "00:00";
@@ -195,6 +196,10 @@ export default function VideoPlayer({
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         setBlobUrl(URL.createObjectURL(xhr.response));
+      } else if (xhr.status === 409) {
+        // This tab/device has been superseded — let SessionGate react
+        // immediately instead of showing a generic "couldn't load" error.
+        window.dispatchEvent(new Event(SESSION_LOCKED_EVENT));
       } else {
         setLoadError(true);
       }

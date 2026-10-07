@@ -37,12 +37,17 @@ export const accessGrants = sqliteTable('access_grants', {
   // event's folder. Cleared once that Drive-level access has been revoked
   // (on manual revoke, on expiry cleanup, or via the daily cron sweep).
   drivePermissionId: text('drive_permission_id'),
-  // The one device currently allowed to use this link (a random ID stored
-  // in that device's cookie). A different device opening the link can take
-  // over, which replaces this value — the previous device then finds its
-  // own cookie no longer matches and is locked out. Admin test emails are
-  // exempt from this check entirely.
+  // The one device + tab currently allowed to use this link. A different
+  // device or a different tab on the same device can take over (with
+  // confirmation), which replaces these — the previous holder then finds
+  // its own identifiers no longer match and is locked out, no retry.
   activeDeviceId: text('active_device_id'),
+  activeTabId: text('active_tab_id'),
+  // 4-digit code the admin shares with the client out-of-band (alongside the
+  // link). Required to claim or transfer the session, so having the link
+  // alone isn't enough to take it over. Empty on older grants created
+  // before this existed — those fall back to no PIN requirement.
+  pin: text('pin').notNull().default(''),
   createdAt: integer('created_at').notNull(),
 });
 

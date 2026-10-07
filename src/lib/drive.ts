@@ -156,36 +156,70 @@ export type LockdownResult = {
 
 // Applies Drive's "viewers/commenters can't download, print, or copy"
 // restriction to every video in a folder — the API equivalent of unchecking
-// that box by hand on each file, done in bulk.
+// that box by hand on each file, done in bulk. Runs with a bounded
+// concurrency (rather than one request at a time) since a folder can hold
+// several thousand files — fully sequential would take minutes and risk
+// being killed by the host's function timeout before it finishes.
+const LOCKDOWN_CONCURRENCY = 10;
+const MAX_ATTEMPTS = 5;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function lockdownFolderVideos(folderId: string, accessToken: string): Promise<LockdownResult> {
   const files = (await listVideosWithAccessToken(folderId, accessToken)) as (DriveVideoFile & {
     copyRequiresWriterPermission?: boolean;
   })[];
 
   const result: LockdownResult = { total: files.length, alreadyLocked: 0, newlyLocked: 0, failed: 0 };
-
-  for (const file of files) {
-    if (file.copyRequiresWriterPermission) {
+  const pending = files.filter((f) => {
+    if (f.copyRequiresWriterPermission) {
       result.alreadyLocked++;
-      continue;
+      return false;
     }
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?supportsAllDrives=true`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ copyRequiresWriterPermission: true }),
-    });
-    if (res.ok) {
-      result.newlyLocked++;
-    } else {
-      result.failed++;
+    return true;
+  });
+
+  // Drive enforces a per-user rate limit — a plain one-shot PATCH per file
+  // at any real concurrency runs into 403/429 "rate limit exceeded"
+  // responses well before 6000 files are through. Retry those with
+  // exponential backoff instead of counting them as permanent failures.
+  async function lockOne(file: DriveVideoFile) {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?supportsAllDrives=true`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ copyRequiresWriterPermission: true }),
+      });
+      if (res.ok) {
+        result.newlyLocked++;
+        return;
+      }
+      const retryable = res.status === 403 || res.status === 429 || res.status >= 500;
       const body = await res.text();
+      if (retryable && attempt < MAX_ATTEMPTS) {
+        await sleep(2 ** attempt * 300 + Math.random() * 300);
+        continue;
+      }
+      result.failed++;
       console.error(`Lockdown failed for file ${file.id} (${res.status}): ${body}`);
       if (!result.firstError) result.firstError = `(${res.status}) ${body.slice(0, 300)}`;
+      return;
     }
   }
+
+  let next = 0;
+  async function worker() {
+    while (next < pending.length) {
+      const file = pending[next++];
+      await lockOne(file);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(LOCKDOWN_CONCURRENCY, pending.length) }, worker));
 
   return result;
 }

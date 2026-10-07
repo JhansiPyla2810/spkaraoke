@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accessGrants, events } from "@/lib/schema";
 import { getAccessTokenFromRefreshToken } from "@/lib/googleAuth";
+import { deviceCookieName } from "@/lib/deviceSession";
 
 // Node runtime (not Edge) — Edge is incompatible with the local dev SQLite
 // file database. Extend the duration since a full (non-ranged) request for
@@ -26,7 +27,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const [event] = await db.select().from(events).where(eq(events.id, grant.eventId));
   if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Single-device lock temporarily disabled — see src/app/watch/[token]/page.tsx.
+  // Reject streaming for a tab/device that's been superseded by a transfer —
+  // without this, a kicked-out tab could keep starting new videos even
+  // though it can no longer see the gallery page itself.
+  const tab = request.nextUrl.searchParams.get("tab");
+  const cookieDeviceId = request.cookies.get(deviceCookieName(token))?.value;
+  if (
+    !tab ||
+    !grant.activeDeviceId ||
+    !grant.activeTabId ||
+    cookieDeviceId !== grant.activeDeviceId ||
+    tab !== grant.activeTabId
+  ) {
+    return NextResponse.json({ error: "This link is active elsewhere" }, { status: 409 });
+  }
 
   let accessToken: string;
   try {

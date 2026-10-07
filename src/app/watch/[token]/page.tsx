@@ -4,9 +4,9 @@ import { accessGrants, events } from "@/lib/schema";
 import { listVideosWithAccessToken } from "@/lib/drive";
 import { getAccessTokenFromRefreshToken } from "@/lib/googleAuth";
 import { cleanupGrantDriveAccess } from "@/lib/grantCleanup";
-import { logAccessView } from "@/lib/accessViews";
 import VideoGallery from "./VideoGallery";
 import AutoExpireWatcher from "./AutoExpireWatcher";
+import SessionGate from "./SessionGate";
 import LocalTime from "@/app/components/LocalTime";
 
 export const dynamic = "force-dynamic";
@@ -45,22 +45,6 @@ export default async function WatchPage({
   const [event] = await db.select().from(events).where(eq(events.id, grant.eventId));
   if (!event) return <ExpiredNotice message="This link isn't valid." />;
 
-  // Single-device lock temporarily disabled (untested, reverted so it
-  // can't risk blocking a real client before a live session) — re-enable
-  // by restoring the status check below once it's been tested.
-  // const cookieStore = await cookies();
-  // const cookieDeviceId = cookieStore.get(deviceCookieName(token))?.value;
-  // const deviceStatus = getDeviceStatus(grant.clientEmail, grant.activeDeviceId, cookieDeviceId);
-  // if (deviceStatus !== "match" && deviceStatus !== "exempt") {
-  //   return <DeviceGate token={token} status={deviceStatus} />;
-  // }
-
-  try {
-    await logAccessView(grant.id);
-  } catch (e) {
-    console.error("Failed to log access view", e);
-  }
-
   let videos: { id: string; name: string }[] = [];
   let loadError = false;
   try {
@@ -71,6 +55,7 @@ export default async function WatchPage({
   }
 
   return (
+    <SessionGate token={token}>
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: "48px 20px 80px" }}>
       <AutoExpireWatcher expiresAt={grant.expiresAt} />
 
@@ -124,5 +109,6 @@ export default async function WatchPage({
         />
       )}
     </div>
+    </SessionGate>
   );
 }
