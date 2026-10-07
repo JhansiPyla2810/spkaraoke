@@ -1,10 +1,9 @@
+import { Suspense } from "react";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accessGrants, events } from "@/lib/schema";
-import { listVideosWithAccessToken } from "@/lib/drive";
-import { getAccessTokenFromRefreshToken } from "@/lib/googleAuth";
 import { cleanupGrantDriveAccess } from "@/lib/grantCleanup";
-import VideoGallery from "./VideoGallery";
+import VideoSection from "./VideoSection";
 import AutoExpireWatcher from "./AutoExpireWatcher";
 import SessionGate from "./SessionGate";
 import LocalTime from "@/app/components/LocalTime";
@@ -45,15 +44,6 @@ export default async function WatchPage({
   const [event] = await db.select().from(events).where(eq(events.id, grant.eventId));
   if (!event) return <ExpiredNotice message="This link isn't valid." />;
 
-  let videos: { id: string; name: string }[] = [];
-  let loadError = false;
-  try {
-    const accessToken = await getAccessTokenFromRefreshToken();
-    videos = await listVideosWithAccessToken(event.driveFolderId, accessToken);
-  } catch {
-    loadError = true;
-  }
-
   return (
     <SessionGate token={token}>
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: "48px 20px 80px" }}>
@@ -90,24 +80,14 @@ export default async function WatchPage({
         </p>
       </div>
 
-      {loadError && (
-        <p style={{ color: "var(--muted)" }}>
-          Couldn&apos;t load the videos right now. Please refresh, or contact us if this keeps happening.
-        </p>
-      )}
-
-      {!loadError && videos.length === 0 && (
-        <p style={{ color: "var(--muted)" }}>No videos have been added to this event yet.</p>
-      )}
-
-      {!loadError && videos.length > 0 && (
-        <VideoGallery
-          videos={videos}
+      <Suspense fallback={<p style={{ color: "var(--muted)" }}>Loading videos...</p>}>
+        <VideoSection
+          driveFolderId={event.driveFolderId}
           clientName={grant.clientName}
           expiresAt={grant.expiresAt}
           grantToken={grant.token}
         />
-      )}
+      </Suspense>
     </div>
     </SessionGate>
   );
