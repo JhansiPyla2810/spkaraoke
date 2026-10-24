@@ -4,6 +4,25 @@ export function deviceCookieName(token: string): string {
   return `wd_${token}`;
 }
 
+// Separate from the client device cookie: marks this browser as having
+// proven (via verified Google sign-in) that it belongs to one of the
+// business's own admin accounts. Admins can view a link in parallel with
+// whichever client currently holds it — this cookie's presence is checked
+// before the normal single-session logic even runs, and claiming it never
+// touches the grant's activeDeviceId/activeTabId, so it never kicks the
+// real client out.
+export function adminCookieName(token: string): string {
+  return `wa_${token}`;
+}
+
+export function isAdminEmail(email: string): boolean {
+  const admins = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return admins.includes(email.toLowerCase());
+}
+
 export function generateSessionId(): string {
   return crypto.randomBytes(16).toString("hex");
 }
