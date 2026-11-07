@@ -130,3 +130,25 @@ export const devices = sqliteTable('devices', {
   registeredAt: integer('registered_at').notNull(),
   lastSeenAt: integer('last_seen_at').notNull(),
 });
+
+// One row per song version that's been prepared for offline download:
+// packaged into fMP4 segments, each encrypted, with a manifest describing
+// them. The content key is stored encrypted under the server's OFFLINE_KEK
+// (see lib/offlineKeys.ts), never in plaintext.
+export const offlineAssets = sqliteTable('offline_assets', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  // The catalog video this was prepared from (its Google Drive file ID).
+  videoId: text('video_id').notNull(),
+  assetId: text('asset_id').notNull().unique(),
+  assetVersion: integer('asset_version').notNull(),
+  encryptedContentKey: text('encrypted_content_key').notNull(),
+  // JSON: tracks -> segments (index, size, sha256, nonce, tag, storage ref).
+  manifest: text('manifest').notNull(),
+  // 'local' (dev only) | 'drive'
+  storage: text('storage').notNull(),
+  // Base folder: a local path for 'local', a Drive folder ID for 'drive'.
+  storageRef: text('storage_ref').notNull(),
+  // 'ready' | 'retired' - only 'ready' assets can be downloaded.
+  status: text('status').notNull().default('ready'),
+  createdAt: integer('created_at').notNull(),
+});

@@ -129,5 +129,23 @@ export async function GET() {
   );
   results.push("devices table ready");
 
+  await db.run(
+    sql.raw(`
+      CREATE TABLE IF NOT EXISTS offline_assets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        video_id TEXT NOT NULL,
+        asset_id TEXT NOT NULL UNIQUE,
+        asset_version INTEGER NOT NULL,
+        encrypted_content_key TEXT NOT NULL,
+        manifest TEXT NOT NULL,
+        storage TEXT NOT NULL,
+        storage_ref TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'ready',
+        created_at INTEGER NOT NULL
+      )
+    `)
+  );
+  results.push("offline_assets table ready");
+
   return NextResponse.json({ results });
 }
