@@ -28,7 +28,6 @@ export default async function EventsPage({
           Events ({allEvents.length})
         </h1>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link className="btn btn-ghost" href="/admin/dashboard">Manage songs</Link>
           <Link className="btn btn-ghost" href="/admin/subscriptions">Subscribers</Link>
           <form action={logout}>
             <SubmitButton className="btn btn-ghost" pendingLabel="Logging out...">Log out</SubmitButton>

@@ -51,7 +51,6 @@ export default async function SubscriptionsPage() {
         </h1>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link className="btn btn-ghost" href="/admin/events">Events &amp; links</Link>
-          <Link className="btn btn-ghost" href="/admin/dashboard">Manage songs</Link>
           <form action={logout}>
             <SubmitButton className="btn btn-ghost" pendingLabel="Logging out...">Log out</SubmitButton>
           </form>
