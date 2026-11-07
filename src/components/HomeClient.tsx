@@ -4,18 +4,24 @@ import { LangProvider } from "@/lib/LangProvider";
 import Nav from "./Nav";
 import Hero from "./Hero";
 import About from "./About";
-import Songs, { type Song } from "./Songs";
 import Events from "./Events";
 import Contact from "./Contact";
 import FooterAndLegends from "./FooterAndLegends";
 
-export default function HomeClient({ songs, totalCount }: { songs: Song[]; totalCount: number }) {
+export default function HomeClient({
+  isApp = false,
+  signedIn = false,
+  sessionToken,
+}: {
+  isApp?: boolean;
+  signedIn?: boolean;
+  sessionToken?: string;
+}) {
   return (
     <LangProvider>
-      <Nav />
-      <Hero />
+      <Nav isApp={isApp} signedIn={signedIn} sessionToken={sessionToken} />
+      <Hero isApp={isApp} />
       <About />
-      <Songs songs={songs} totalCount={totalCount} />
       <Events />
       <Contact />
       <FooterAndLegends />

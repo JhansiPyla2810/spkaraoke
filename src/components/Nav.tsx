@@ -2,10 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useLang } from "@/lib/LangProvider";
+import AppSignInLink from "./AppSignInLink";
+import AppSignOutButton from "./AppSignOutButton";
 
-const SECTIONS = ["home", "about", "songs", "events", "contact"] as const;
+const SECTIONS = ["home", "about", "events", "contact"] as const;
 
-export default function Nav() {
+export default function Nav({
+  isApp = false,
+  signedIn = false,
+  sessionToken,
+}: {
+  isApp?: boolean;
+  signedIn?: boolean;
+  sessionToken?: string;
+}) {
   const { lang, setLang, t } = useLang();
   const [active, setActive] = useState<string>("home");
 
@@ -62,7 +72,6 @@ export default function Nav() {
         <div className="navlinks">
           <a href="#home" className={active === "home" ? "active" : ""}>{t.navHome}</a>
           <a href="#about" className={active === "about" ? "active" : ""}>{t.navAbout}</a>
-          <a href="#songs" className={active === "songs" ? "active" : ""}>{t.navSongs}</a>
           <a href="#events" className={active === "events" ? "active" : ""}>{t.navEvents}</a>
           <a href="#contact" className={active === "contact" ? "active" : ""}>{t.navContact}</a>
         </div>
@@ -71,7 +80,23 @@ export default function Nav() {
             <button type="button" className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
             <button type="button" className={lang === "te" ? "active" : ""} onClick={() => setLang("te")}>తె</button>
           </div>
-          <a className="navcta" href="#contact">{t.navGetAccess}</a>
+          {isApp ? (
+            // Only ever rendered inside the desktop/Mac app (detected
+            // server-side via its user-agent marker) - same spot and look
+            // as the website's own "Get Access" CTA, which is hidden here
+            // since subscribed app members already have access this way.
+            <AppSignInLink
+              isApp={isApp}
+              signedIn={signedIn}
+              sessionToken={sessionToken}
+              fallbackHref="#contact"
+              fallbackLabel={t.navGetAccess}
+              className="navcta"
+            />
+          ) : (
+            <a className="navcta" href="#contact">{t.navGetAccess}</a>
+          )}
+          {isApp && signedIn && <AppSignOutButton className="navcta" />}
         </div>
       </div>
     </nav>

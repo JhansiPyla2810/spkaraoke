@@ -72,5 +72,47 @@ export async function GET() {
   );
   results.push(`"All Songs" protection: ${protect.rowsAffected ?? 0} row(s) updated`);
 
+  await db.run(
+    sql.raw(`
+      CREATE TABLE IF NOT EXISTS subscribers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL DEFAULT '',
+        created_at INTEGER NOT NULL
+      )
+    `)
+  );
+  results.push("subscribers table ready");
+
+  await db.run(
+    sql.raw(`
+      CREATE TABLE IF NOT EXISTS subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        subscriber_id INTEGER NOT NULL,
+        plan TEXT NOT NULL,
+        starts_at INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL,
+        suspended INTEGER NOT NULL DEFAULT 0,
+        revoked INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL
+      )
+    `)
+  );
+  results.push("subscriptions table ready");
+
+  await db.run(
+    sql.raw(`
+      CREATE TABLE IF NOT EXISTS app_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        subscriber_id INTEGER NOT NULL,
+        session_token TEXT NOT NULL UNIQUE,
+        device_id TEXT NOT NULL,
+        last_seen_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      )
+    `)
+  );
+  results.push("app_sessions table ready");
+
   return NextResponse.json({ results });
 }

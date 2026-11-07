@@ -3,7 +3,7 @@
 import { useLang } from "@/lib/LangProvider";
 import CountUp from "./CountUp";
 
-export default function Hero() {
+export default function Hero({ isApp = false }: { isApp?: boolean }) {
   const { t } = useLang();
   return (
     <section id="home" className="hero" style={{ borderTop: "none" }}>
@@ -17,8 +17,12 @@ export default function Hero() {
           </h1>
           <p>{t.heroP}</p>
           <div className="hero-actions">
-            <a className="btn btn-primary" href="#songs">{t.heroBrowse}</a>
-            <a className="btn btn-ghost" href="#contact">{t.heroAccess}</a>
+            {/* Subscribed app members already have access via the nav's
+               sign-in/gallery link - this one-off-link CTA only makes
+               sense for regular website visitors. */}
+            {!isApp && (
+              <a className="btn btn-ghost" href="#contact">{t.heroAccess}</a>
+            )}
           </div>
           <div className="stat-strip">
             <div className="stat"><b><CountUp to={5000} suffix="+" /></b><span>{t.statTelugu}</span></div>

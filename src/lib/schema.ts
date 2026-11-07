@@ -70,3 +70,45 @@ export const googleAuth = sqliteTable('google_auth', {
   refreshToken: text('refresh_token').notNull(),
   createdAt: integer('created_at').notNull(),
 });
+
+// A person who has (or has had) a monthly/quarterly/annual subscription to
+// the Windows app's full catalog - entirely separate from the one-off
+// event-link clients above. Identity is their Google account's email,
+// verified the same way the website's watch-page sign-in is.
+export const subscribers = sqliteTable('subscribers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull().unique(),
+  name: text('name').notNull().default(''),
+  createdAt: integer('created_at').notNull(),
+});
+
+// One row per purchase/renewal period. A subscriber can have several rows
+// over time (renewals); "the current state" is whichever row is active and
+// not yet expired - see subscriptionStatus() in lib/subscriptions.ts.
+export const subscriptions = sqliteTable('subscriptions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  subscriberId: integer('subscriber_id').notNull(),
+  plan: text('plan').notNull(), // 'monthly' | 'quarterly' | 'annual'
+  startsAt: integer('starts_at').notNull(),
+  expiresAt: integer('expires_at').notNull(),
+  // Admin can suspend a subscription without waiting for it to expire
+  // (e.g. a payment dispute) - distinct from revoked, which is permanent.
+  suspended: integer('suspended', { mode: 'boolean' }).notNull().default(false),
+  revoked: integer('revoked', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at').notNull(),
+});
+
+// One row per Windows-app device session for a subscriber - same
+// single-session idea as the website's access grants, so a subscription
+// can't be shared by logging into the app on many machines simultaneously.
+export const appSessions = sqliteTable('app_sessions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  subscriberId: integer('subscriber_id').notNull(),
+  // Opaque bearer token the Electron app stores locally and sends on every
+  // request; this is what we actually authenticate against, not the email,
+  // so a stolen DB row alone can't be replayed without this value too.
+  sessionToken: text('session_token').notNull().unique(),
+  deviceId: text('device_id').notNull(),
+  lastSeenAt: integer('last_seen_at').notNull(),
+  createdAt: integer('created_at').notNull(),
+});
