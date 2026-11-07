@@ -114,5 +114,20 @@ export async function GET() {
   );
   results.push("app_sessions table ready");
 
+  await db.run(
+    sql.raw(`
+      CREATE TABLE IF NOT EXISTS devices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        subscriber_id INTEGER NOT NULL,
+        device_id TEXT NOT NULL UNIQUE,
+        public_key TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        registered_at INTEGER NOT NULL,
+        last_seen_at INTEGER NOT NULL
+      )
+    `)
+  );
+  results.push("devices table ready");
+
   return NextResponse.json({ results });
 }

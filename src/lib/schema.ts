@@ -112,3 +112,21 @@ export const appSessions = sqliteTable('app_sessions', {
   lastSeenAt: integer('last_seen_at').notNull(),
   createdAt: integer('created_at').notNull(),
 });
+
+// One row per app install that has registered a device key pair, for
+// offline downloads. Content keys are only ever handed out wrapped to a
+// row's public key, so a downloaded song copied to another machine can't
+// be unlocked there. The private half never leaves the device.
+export const devices = sqliteTable('devices', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  subscriberId: integer('subscriber_id').notNull(),
+  // Same per-install ID the app already sends at login (app_sessions).
+  deviceId: text('device_id').notNull().unique(),
+  // Base64 DER (SPKI) X25519 public key.
+  publicKey: text('public_key').notNull(),
+  // 'active' | 'deactivated' - deactivated devices get no new keys or
+  // license renewals.
+  status: text('status').notNull().default('active'),
+  registeredAt: integer('registered_at').notNull(),
+  lastSeenAt: integer('last_seen_at').notNull(),
+});
