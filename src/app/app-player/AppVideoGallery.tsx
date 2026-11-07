@@ -2,8 +2,42 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppVideoPlayer from "./AppVideoPlayer";
+import type { AppDownloadState } from "@/components/AppSignInLink";
 
 type Video = { id: string; name: string };
+
+// Only rendered when running inside the desktop app (the bridge exists).
+// The actual download runs in the app's main process, so it keeps going if
+// the user navigates away from this page.
+function DownloadButton({ video, state }: { video: Video; state?: AppDownloadState }) {
+  const status = state?.status;
+  const pct = state?.total ? Math.floor(((state.done ?? 0) / state.total) * 100) : 0;
+  const label =
+    status === "complete"
+      ? "✓ Downloaded"
+      : status === "downloading"
+        ? `Downloading ${pct}%`
+        : status === "queued"
+          ? "Queued…"
+          : status === "error"
+            ? "Retry download"
+            : status === "blocked"
+              ? "Needs reconnect"
+              : "Download";
+  const disabled = status === "complete" || status === "downloading" || status === "queued";
+  return (
+    <button
+      type="button"
+      className="btn btn-ghost"
+      disabled={disabled}
+      onClick={() => window.spkApp?.download?.(video.id)}
+      title={status === "error" ? state?.error : undefined}
+      style={{ fontSize: ".78rem", padding: "6px 10px", marginTop: 8, width: "100%", opacity: disabled ? 0.75 : 1 }}
+    >
+      {label}
+    </button>
+  );
+}
 
 function PlayButton() {
   return (
@@ -26,7 +60,17 @@ function PlayButton() {
   );
 }
 
-function VideoCard({ video, onOpen }: { video: Video; onOpen: (v: Video) => void }) {
+function VideoCard({
+  video,
+  onOpen,
+  canDownload,
+  downloadState,
+}: {
+  video: Video;
+  onOpen: (v: Video) => void;
+  canDownload: boolean;
+  downloadState?: AppDownloadState;
+}) {
   return (
     <div
       style={{
@@ -78,6 +122,7 @@ function VideoCard({ video, onOpen }: { video: Video; onOpen: (v: Video) => void
         >
           {video.name}
         </div>
+        {canDownload && <DownloadButton video={video} state={downloadState} />}
       </div>
     </div>
   );
@@ -108,6 +153,26 @@ export default function AppVideoGallery({
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [canDownload, setCanDownload] = useState(false);
+  const [downloads, setDownloads] = useState<Record<string, AppDownloadState>>({});
+
+  // Download buttons only exist inside the desktop app. Initial states come
+  // from the app; live progress is pushed from its main process.
+  useEffect(() => {
+    const app = window.spkApp;
+    if (!app?.download || !app.getDownloadStates || !app.onDownloadProgress) return;
+    let cancelled = false;
+    app.getDownloadStates().then((states) => {
+      if (cancelled) return;
+      setCanDownload(true);
+      setDownloads(Object.fromEntries(states.map((s) => [s.videoId, s])));
+    });
+    const unsubscribe = app.onDownloadProgress((s) => setDownloads((prev) => ({ ...prev, [s.videoId]: s })));
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -187,7 +252,13 @@ export default function AppVideoGallery({
             }}
           >
             {visible.map((v) => (
-              <VideoCard key={v.id} video={v} onOpen={setActiveVideo} />
+              <VideoCard
+                key={v.id}
+                video={v}
+                onOpen={setActiveVideo}
+                canDownload={canDownload}
+                downloadState={downloads[v.id]}
+              />
             ))}
           </div>
           {visibleCount < filtered.length && (

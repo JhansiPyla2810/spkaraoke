@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useLang } from "@/lib/LangProvider";
 import AppSignInLink from "./AppSignInLink";
 import AppSignOutButton from "./AppSignOutButton";
+import AppDownloadsLink from "./AppDownloadsLink";
 
 const SECTIONS = ["home", "about", "events", "contact"] as const;
 
@@ -96,6 +97,7 @@ export default function Nav({
           ) : (
             <a className="navcta" href="#contact">{t.navGetAccess}</a>
           )}
+          {isApp && signedIn && <AppDownloadsLink className="navcta" />}
           {isApp && signedIn && <AppSignOutButton className="navcta" />}
         </div>
       </div>

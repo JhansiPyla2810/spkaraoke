@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { appSessions, devices } from "@/lib/schema";
+import { appSessions, devices, subscribers } from "@/lib/schema";
 import { checkAppSession } from "@/lib/appAuth";
 
 export type AppDeviceCheck =
@@ -11,6 +11,7 @@ export type AppDeviceCheck =
       deviceId: string;
       devicePublicKey: string;
       subscriptionExpiresAt: number;
+      subscriberLabel: string;
     }
   | { ok: false; response: NextResponse };
 
@@ -37,6 +38,7 @@ export async function requireAppDevice(request: NextRequest): Promise<AppDeviceC
   if (device.status !== "active") return deny("device_deactivated", 403);
 
   await db.update(devices).set({ lastSeenAt: Date.now() }).where(eq(devices.id, device.id));
+  const [subscriber] = await db.select().from(subscribers).where(eq(subscribers.id, session.subscriberId));
 
   return {
     ok: true,
@@ -44,5 +46,6 @@ export async function requireAppDevice(request: NextRequest): Promise<AppDeviceC
     deviceId: device.deviceId,
     devicePublicKey: device.publicKey,
     subscriptionExpiresAt: session.status.expiresAt,
+    subscriberLabel: subscriber?.name || subscriber?.email || "",
   };
 }

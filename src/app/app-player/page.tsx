@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { events, subscribers } from "@/lib/schema";
 import { checkAppSession } from "@/lib/appAuth";
 import AppVideoSection from "./AppVideoSection";
+import AppDownloadsLink from "@/components/AppDownloadsLink";
 
 const ALL_SONGS_EVENT_NAME = "All Songs";
 
@@ -69,9 +70,12 @@ export default async function AppPlayerPage({
               <b style={{ color: "var(--ink)" }}>{new Date(session.status.expiresAt).toLocaleString()}</b>
             </p>
           </div>
-          <a className="btn btn-ghost" href={`/?token=${encodeURIComponent(token)}`}>
-            Home
-          </a>
+          <div style={{ display: "flex", gap: 8 }}>
+            <AppDownloadsLink className="btn btn-ghost" />
+            <a className="btn btn-ghost" href={`/?token=${encodeURIComponent(token)}`}>
+              Home
+            </a>
+          </div>
         </div>
       </div>
 

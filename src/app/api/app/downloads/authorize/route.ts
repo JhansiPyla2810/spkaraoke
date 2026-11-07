@@ -82,7 +82,11 @@ export async function POST(request: NextRequest) {
     ok: true,
     downloadId: row.downloadId,
     mimeType: meta.mimeType,
-    license: issueLicenseForDownload(row, gate.devicePublicKey, gate.subscriptionExpiresAt),
+    license: issueLicenseForDownload(row, gate.devicePublicKey, gate.subscriptionExpiresAt, {
+      subscriberLabel: gate.subscriberLabel,
+      title: meta.name,
+      mimeType: meta.mimeType,
+    }),
     downloadToken: issueDownloadToken(row.downloadId, gate.deviceId),
   });
 }

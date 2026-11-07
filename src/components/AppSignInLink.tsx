@@ -6,11 +6,23 @@ import { useState } from "react";
 // regular website visitor, so this component falls back to the normal
 // anchor link whenever it's not present (belt-and-suspenders alongside the
 // server-side isApp check from the request's user-agent).
+export type AppDownloadState = {
+  videoId: string;
+  status: "queued" | "downloading" | "complete" | "error" | "blocked";
+  done?: number;
+  total?: number;
+  error?: string;
+};
+
 declare global {
   interface Window {
     spkApp?: {
       login: () => Promise<{ ok: boolean; error?: string }>;
       logout: () => Promise<{ ok: boolean }>;
+      download?: (videoId: string) => Promise<{ ok: boolean; error?: string }>;
+      getDownloadStates?: () => Promise<AppDownloadState[]>;
+      onDownloadProgress?: (cb: (state: AppDownloadState) => void) => () => void;
+      openDownloads?: () => void;
     };
   }
 }

@@ -14,8 +14,13 @@ export type LicensePayload = {
   licenseId: string;
   downloadId: string;
   subscriberId: number;
+  // Shown in the offline player's watermark - signed, so it can't be edited.
+  subscriberLabel: string;
   deviceId: string;
   videoId: string;
+  // Display title for the offline Downloads list.
+  title: string;
+  mimeType: string;
   size: number;
   chunkSize: number;
   chunkCount: number;
@@ -43,7 +48,8 @@ export function signLicense(payload: LicensePayload): SignedLicense {
 export function issueLicenseForDownload(
   row: typeof offlineDownloads.$inferSelect,
   devicePublicKeyBase64: string,
-  subscriptionExpiresAt: number
+  subscriptionExpiresAt: number,
+  display: { subscriberLabel: string; title: string; mimeType: string }
 ): SignedLicense {
   const contentKey = decryptContentKeyAtRest(row.encryptedContentKey, row.downloadId);
   const wrappedContentKey = wrapContentKey(contentKey, Buffer.from(devicePublicKeyBase64, "base64"), {
@@ -56,8 +62,11 @@ export function issueLicenseForDownload(
     licenseId: crypto.randomUUID(),
     downloadId: row.downloadId,
     subscriberId: row.subscriberId,
+    subscriberLabel: display.subscriberLabel,
     deviceId: row.deviceId,
     videoId: row.videoId,
+    title: display.title,
+    mimeType: display.mimeType,
     size: row.size,
     chunkSize: row.chunkSize,
     chunkCount: row.chunkCount,

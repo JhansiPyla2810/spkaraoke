@@ -8,7 +8,7 @@ import { getAccessTokenFromRefreshToken } from "@/lib/googleAuth";
 // deleted one stops being downloadable immediately.
 const ALL_SONGS_EVENT_NAME = "All Songs";
 
-export type VideoMeta = { size: number; md5: string; mimeType: string };
+export type VideoMeta = { size: number; md5: string; mimeType: string; name: string };
 
 async function allSongsFolderId(): Promise<string | null> {
   const [event] = await db.select().from(events).where(eq(events.name, ALL_SONGS_EVENT_NAME));
@@ -23,12 +23,13 @@ export async function getCatalogVideoMeta(fileId: string): Promise<VideoMeta | n
   if (!folderId) return null;
   const accessToken = await getAccessTokenFromRefreshToken();
   const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=size,md5Checksum,mimeType,parents,trashed&supportsAllDrives=true`,
+    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=name,size,md5Checksum,mimeType,parents,trashed&supportsAllDrives=true`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`drive_meta_failed_${res.status}`);
   const m = (await res.json()) as {
+    name?: string;
     size?: string;
     md5Checksum?: string;
     mimeType?: string;
@@ -37,7 +38,7 @@ export async function getCatalogVideoMeta(fileId: string): Promise<VideoMeta | n
   };
   if (m.trashed || !m.parents?.includes(folderId) || !m.mimeType?.startsWith("video/")) return null;
   if (!m.size || !m.md5Checksum) return null;
-  return { size: Number(m.size), md5: m.md5Checksum, mimeType: m.mimeType };
+  return { size: Number(m.size), md5: m.md5Checksum, mimeType: m.mimeType, name: m.name ?? "Untitled" };
 }
 
 export async function fetchVideoRange(fileId: string, start: number, endInclusive: number): Promise<Buffer> {
