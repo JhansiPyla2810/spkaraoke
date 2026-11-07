@@ -5,7 +5,13 @@ import { appSessions, devices } from "@/lib/schema";
 import { checkAppSession } from "@/lib/appAuth";
 
 export type AppDeviceCheck =
-  | { ok: true; subscriberId: number; deviceId: string; devicePublicKey: string }
+  | {
+      ok: true;
+      subscriberId: number;
+      deviceId: string;
+      devicePublicKey: string;
+      subscriptionExpiresAt: number;
+    }
   | { ok: false; response: NextResponse };
 
 function deny(error: string, status: number): AppDeviceCheck {
@@ -37,5 +43,6 @@ export async function requireAppDevice(request: NextRequest): Promise<AppDeviceC
     subscriberId: session.subscriberId,
     deviceId: device.deviceId,
     devicePublicKey: device.publicKey,
+    subscriptionExpiresAt: session.status.expiresAt,
   };
 }

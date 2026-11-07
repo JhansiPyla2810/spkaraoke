@@ -40,6 +40,3 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 local.db*
-
-# locally-prepared encrypted offline assets (dev only)
-/.offline-assets/

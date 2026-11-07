@@ -131,21 +131,23 @@ export async function GET() {
 
   await db.run(
     sql.raw(`
-      CREATE TABLE IF NOT EXISTS offline_assets (
+      CREATE TABLE IF NOT EXISTS offline_downloads (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        download_id TEXT NOT NULL UNIQUE,
+        subscriber_id INTEGER NOT NULL,
+        device_id TEXT NOT NULL,
         video_id TEXT NOT NULL,
-        asset_id TEXT NOT NULL UNIQUE,
-        asset_version INTEGER NOT NULL,
+        source_md5 TEXT NOT NULL,
+        size INTEGER NOT NULL,
+        chunk_size INTEGER NOT NULL,
+        chunk_count INTEGER NOT NULL,
         encrypted_content_key TEXT NOT NULL,
-        manifest TEXT NOT NULL,
-        storage TEXT NOT NULL,
-        storage_ref TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'ready',
+        status TEXT NOT NULL DEFAULT 'active',
         created_at INTEGER NOT NULL
       )
     `)
   );
-  results.push("offline_assets table ready");
+  results.push("offline_downloads table ready");
 
   return NextResponse.json({ results });
 }

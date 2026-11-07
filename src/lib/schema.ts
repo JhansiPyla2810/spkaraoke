@@ -131,24 +131,27 @@ export const devices = sqliteTable('devices', {
   lastSeenAt: integer('last_seen_at').notNull(),
 });
 
-// One row per song version that's been prepared for offline download:
-// packaged into fMP4 segments, each encrypted, with a manifest describing
-// them. The content key is stored encrypted under the server's OFFLINE_KEK
-// (see lib/offlineKeys.ts), never in plaintext.
-export const offlineAssets = sqliteTable('offline_assets', {
+// One row per (device, video) offline download. Each download gets its own
+// random content key - stored encrypted under OFFLINE_KEK, never in
+// plaintext - so one leaked key exposes one person's copy, not the song for
+// everyone. Chunks are encrypted on the fly from the live Drive file; there
+// is no separately stored copy of the video.
+export const offlineDownloads = sqliteTable('offline_downloads', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  // The catalog video this was prepared from (its Google Drive file ID).
+  downloadId: text('download_id').notNull().unique(),
+  subscriberId: integer('subscriber_id').notNull(),
+  deviceId: text('device_id').notNull(),
+  // The catalog video (its Google Drive file ID).
   videoId: text('video_id').notNull(),
-  assetId: text('asset_id').notNull().unique(),
-  assetVersion: integer('asset_version').notNull(),
+  // Drive's md5 of the source at download time - if the video in Drive is
+  // replaced, chunk requests for the old download stop and a fresh
+  // download picks up the new version.
+  sourceMd5: text('source_md5').notNull(),
+  size: integer('size').notNull(),
+  chunkSize: integer('chunk_size').notNull(),
+  chunkCount: integer('chunk_count').notNull(),
   encryptedContentKey: text('encrypted_content_key').notNull(),
-  // JSON: tracks -> segments (index, size, sha256, nonce, tag, storage ref).
-  manifest: text('manifest').notNull(),
-  // 'local' (dev only) | 'drive'
-  storage: text('storage').notNull(),
-  // Base folder: a local path for 'local', a Drive folder ID for 'drive'.
-  storageRef: text('storage_ref').notNull(),
-  // 'ready' | 'retired' - only 'ready' assets can be downloaded.
-  status: text('status').notNull().default('ready'),
+  // 'active' | 'superseded' | 'revoked'
+  status: text('status').notNull().default('active'),
   createdAt: integer('created_at').notNull(),
 });
